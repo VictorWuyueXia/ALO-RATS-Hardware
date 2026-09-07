@@ -111,12 +111,13 @@ class WorkflowDisplay:
             p.removeUserDebugItem(item, physicsClientId=self.client)
         self.overlay_ids = []
         axes = (self.state.x_axis_mm, self.state.y_axis_mm, self.state.z_axis_mm)
-        for mask, color in ((self.state.target_mask, [1, 0.6, 0]), (self.state.constraint_mask, [1, 0, 0])):
+        for mask, color in ((self.state.target_mask, [0.05, 0.15, 0.55]),
+                            (self.state.constraint_mask, [0.55, 0.02, 0.04])):
             indices = np.argwhere(mask)
             indices = indices[::max(1, len(indices) // 1800)]
             xyz = np.column_stack([axis[indices[:, i]] for i, axis in enumerate(axes)])
             self.overlay_ids.append(p.addUserDebugPoints(self.points(xyz), [color] * len(xyz),
-                                                         pointSize=2, physicsClientId=self.client))
+                                                         pointSize=4, physicsClientId=self.client))
         for endpoint, color in (([3, 0, 0], [0, 1, 0]), ([0, 3, 0], [0, 0.5, 1])):
             self.overlay_ids.append(p.addUserDebugLine(self.points([0, 0, 0]), self.points(endpoint),
                                                        color, 2, physicsClientId=self.client))

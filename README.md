@@ -83,7 +83,7 @@ python simulation/run_simulation.py \
   --case compact_diagnostic --output-dir "$demo_root/run"
 ```
 
-It runs one process: designation → baseline MPPI authority (10 anchors, 128 samples per anchor, and seed `20260902`) → checked URDF motion → virtual pulse → synthetic volume observation → replanning. The comparable centered-rectangle and response-disturbance cases use the baseline 4/8-J raster seeds; geometrically distinct cases retain their exact-validated seed energies. `method.json` records the selected compute profile, JAX backend, and device list. It is a simulation-only application: `simulation/simulation_isolation.py` rejects RTDE, OCT, laser modules, and all non-local socket connections. The compact diagnostic is not an acceptance-quality treatment result; inspect its `acceptance.json`.
+It runs one process: designation → baseline MPPI authority (10 anchors, 128 samples per anchor, and seed `20260902`) → checked URDF motion → virtual pulse → synthetic volume observation → replanning. The root `config/simulation_cases.yaml` file is the sole authority for simulation geometry defaults and global-planner raster energy seeds. The comparable centered-rectangle and response-disturbance cases use the baseline 4/8-J raster seeds; geometrically distinct cases retain their exact-validated seed energies. `method.json` records the selected compute profile, JAX backend, and device list. It is a simulation-only application: `simulation/simulation_isolation.py` rejects RTDE, OCT, laser modules, and all non-local socket connections. The compact diagnostic is not an acceptance-quality treatment result; inspect its `acceptance.json`.
 
 For a lightweight robot-interaction preview that does not run MPPI, use:
 

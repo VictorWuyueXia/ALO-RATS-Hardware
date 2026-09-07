@@ -67,6 +67,7 @@ class TaskEditor:
                                            minspanx=SPACING_MM, minspany=SPACING_MM, spancoords="data")
         self.shape.on_clicked(self.edit_depth)
         for field in (self.depth, self.right, self.protection):
+            field.on_text_change(self.edit_depth)
             field.on_submit(self.edit_depth)
         self.add.on_clicked(self.add_region)
         self.approve.on_clicked(self.save)
@@ -83,8 +84,13 @@ class TaskEditor:
         self.refresh()
 
     def edit_depth(self, event):
-        # Invalidate approval before parsing, including edits rejected by a widget callback.
+        """Rebuild the 3D task preview as each geometry field changes."""
         self.task = None
+        edit_texts = (self.depth.text.strip(), self.right.text.strip(), self.protection.text.strip())
+        if any(text in {"", "+", "-", ".", "+.", "-."} for text in edit_texts):
+            self.message.set_text("INVALID TASK — finish entering all geometry values before approval")
+            self.figure.canvas.draw_idle()
+            return
         self.regions[-1] = replace(
             self.regions[-1], shape=self.shape.value_selected,
             depth_mm=float(self.depth.text), right_depth_mm=float(self.right.text),

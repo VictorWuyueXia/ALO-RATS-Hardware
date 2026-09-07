@@ -2,6 +2,7 @@
 
 from dataclasses import replace
 from types import SimpleNamespace
+from unittest.mock import Mock
 
 import matplotlib
 matplotlib.use("Agg")
@@ -213,6 +214,22 @@ def test_window_resize_commits_text_without_mouse_coordinates(tmp_path):
         editor.figure.canvas.callbacks.process("resize_event", event)
         assert not editor.depth.capturekeystrokes
         assert editor.task is not None and editor.designation.regions[0].depth_mm == 0.6
+    finally:
+        plt.close(editor.figure)
+
+
+def test_geometry_text_changes_redraw_3d_voxels(tmp_path):
+    import matplotlib.pyplot as plt
+    from run_task_designation import TaskEditor
+
+    editor = TaskEditor(nominal_scan(), tmp_path / "approved", nominal_designation())
+    try:
+        prior_protected_voxels = int(editor.task.state.constraint_mask.sum())
+        editor.figure.canvas.draw = Mock(wraps=editor.figure.canvas.draw)
+        editor.protection.text_disp.set_text("-1.5")
+        editor.protection._observers.process("change", "-1.5")
+        assert int(editor.task.state.constraint_mask.sum()) > prior_protected_voxels
+        assert editor.figure.canvas.draw.called
     finally:
         plt.close(editor.figure)
 

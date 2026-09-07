@@ -1,16 +1,25 @@
-"""Frozen scan-defined treatment cases and their explicit raster seed inputs."""
+"""Configured scan-defined treatment cases and their raster seed inputs."""
 
 from dataclasses import asdict, dataclass, replace
+from pathlib import Path
 
-from scan_fixtures import nominal_designation, nominal_scan
+import yaml
+
+from scan_fixtures import nominal_scan
 from scan_adapter import SPACING_MM
 from task_designation import TargetRegion, TaskDesignation
 
 
-RANDOM_SEED = 20260902
-CASE_NAMES = ("centered_rectangle", "offset_round", "stepped_floor",
-              "separated_patches", "protected_boundary", "response_disturbance")
-LAUNCH_CASE_NAMES = (*CASE_NAMES, "compact_diagnostic")
+SIMULATION_CONFIG_PATH = Path(__file__).resolve().parents[1] / "config/simulation_cases.yaml"
+SIMULATION_CONFIG = yaml.safe_load(SIMULATION_CONFIG_PATH.read_text(encoding="utf-8"))
+RANDOM_SEED = int(SIMULATION_CONFIG["random_seed"])
+CASE_NAMES = tuple(SIMULATION_CONFIG["acceptance_cases"])
+LAUNCH_CASE_NAMES = tuple(SIMULATION_CONFIG["launch_cases"])
+if (len(CASE_NAMES) != len(set(CASE_NAMES))
+        or len(LAUNCH_CASE_NAMES) != len(set(LAUNCH_CASE_NAMES))
+        or not set(CASE_NAMES) < set(LAUNCH_CASE_NAMES)
+        or set(LAUNCH_CASE_NAMES) != set(SIMULATION_CONFIG["cases"])):
+    raise ValueError("simulation case lists must uniquely cover the configured cases")
 
 
 @dataclass(frozen=True)
@@ -34,50 +43,33 @@ class SimulationCase:
 
 
 def simulation_case(name):
-    """Freeze geometry before planning; never revise a case in response to its result."""
-    # This bounded diagnostic exercises real MPPI but never satisfies the frozen case matrix.
-    if name == "compact_diagnostic":
-        designation = replace(nominal_designation(),
-                              grid_bounds_mm=((-1.2, 1.2), (-1.2, 1.2), (-2.0, 0.4)),
-                              regions=(TargetRegion("ellipse", (0, 0), (0.6, 0.6), 0.5, None),),
-                              protected_floor_mm=-1.5, plane_z_mm=0.3)
-        raster = {"candidate_grid_pitches_xy_mm": ((0.3, 0.3), (0.35, 0.35)),
-                  "candidate_grid_shape": (1, 1), "candidate_grid_center_xy_mm": (0, 0),
-                  "candidate_depth_repetitions": 1, "candidate_energies_j": (3.8, 4.0)}
-        return SimulationCase(name, designation, raster, None)
-    if name not in CASE_NAMES:
+    """Build one case from the sole root configuration authority."""
+    cases = SIMULATION_CONFIG["cases"]
+    if name not in cases or name not in LAUNCH_CASE_NAMES:
         raise ValueError(f"Unknown simulation case: {name}")
-    # Match the baseline square authority only for the comparable nominal task pair.
-    baseline_case = name in {"centered_rectangle", "response_disturbance"}
-    region = (
-        TargetRegion("rectangle", (0, 0), (1.75, 1.75), 2.0, None)
-        if baseline_case else TargetRegion("rectangle", (0, 0), (1.6, 1.2), 1.0, None)
+    values = cases[name]
+    geometry = values["designation"]
+    regions = tuple(
+        TargetRegion(
+            region["shape"], tuple(region["center_xy_mm"]),
+            tuple(region["half_size_xy_mm"]), float(region["depth_mm"]),
+            None if region["right_depth_mm"] is None else float(region["right_depth_mm"]),
+        )
+        for region in geometry["regions"]
     )
-    regions, center, pitches, shape, protected = (
-        (region,), (0, 0), ((0.675, 0.675), (0.7, 0.7)), (5, 5), -5.9)
-    if not baseline_case:
-        pitches, protected = ((0.65, 0.5), (0.675, 0.525)), -2.4
-    if name == "offset_round":
-        center = (0.5, -0.3)
-        regions = (TargetRegion("ellipse", center, (1.1, 1.1), 1.0, None),)
-        pitches = ((0.45, 0.45), (0.475, 0.475))
-    elif name == "stepped_floor":
-        regions = (TargetRegion("rectangle", (0, 0), (1.3, 1.0), 0.6, 1.2),)
-        pitches = ((0.525, 0.4), (0.55, 0.425))
-    elif name == "separated_patches":
-        regions = tuple(TargetRegion("rectangle", (x, 0), (0.6, 0.9), 0.9, None)
-                        for x in (-1.05, 1.05))
-        pitches, shape = ((0.675, 0.6), (0.7, 0.625)), (5, 3)
-    elif name == "protected_boundary":
-        center, protected = (0.1, 0), -1.5
-        regions = (TargetRegion("rectangle", center, (1.2, 1.0), 1.0, None),)
-        pitches = ((0.5, 0.4), (0.525, 0.425))
-    nominal = nominal_designation()
-    grid_bounds = ((-2.25, 2.25), (-2.25, 2.25), (-6.0, 0.2)) if baseline_case else nominal.grid_bounds_mm
-    designation = replace(
-        nominal, regions=regions, grid_bounds_mm=grid_bounds,
-        protected_floor_mm=protected, plane_z_mm=0.0 if baseline_case else 0.5)
-    raster = {"candidate_grid_pitches_xy_mm": pitches, "candidate_grid_shape": shape,
-              "candidate_grid_center_xy_mm": center, "candidate_depth_repetitions": 16,
-              "candidate_energies_j": (4.0, 8.0) if baseline_case else (2.28, 2.30)}
-    return SimulationCase(name, designation, raster, 5 if name == "response_disturbance" else None)
+    designation = TaskDesignation(
+        regions, tuple(tuple(pair) for pair in geometry["grid_bounds_mm"]),
+        float(geometry["protected_floor_mm"]), float(geometry["plane_z_mm"]),
+        str(geometry["frame_id"]), str(geometry["authority_id"]),
+    )
+    raster_values = values["raster_settings"]
+    raster = {
+        "candidate_grid_pitches_xy_mm": tuple(
+            tuple(pair) for pair in raster_values["candidate_grid_pitches_xy_mm"]),
+        "candidate_grid_shape": tuple(raster_values["candidate_grid_shape"]),
+        "candidate_grid_center_xy_mm": tuple(raster_values["candidate_grid_center_xy_mm"]),
+        "candidate_depth_repetitions": int(raster_values["candidate_depth_repetitions"]),
+        "candidate_energies_j": tuple(raster_values["candidate_energies_j"]),
+    }
+    disturbed = values["disturbed_pulse"]
+    return SimulationCase(name, designation, raster, None if disturbed is None else int(disturbed))

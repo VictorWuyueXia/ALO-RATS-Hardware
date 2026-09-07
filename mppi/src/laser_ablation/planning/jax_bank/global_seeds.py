@@ -29,8 +29,8 @@ class HybridGlobalSeeds:
     frozen_construction_failure: tuple[tuple[str, str], ...] | None
 
     def __post_init__(self) -> None:
-        if self.raster_bootstrap_count != 4:
-            raise ValueError("hybrid global seeds require exactly four raster bootstraps")
+        if not 1 <= self.raster_bootstrap_count <= len(self.actions):
+            raise ValueError("hybrid global seeds require at least one raster bootstrap")
         if len(self.actions) != len(self.source_ids) or len(self.actions) != len(self.raw_canonical_hashes):
             raise ValueError("hybrid action rows, source IDs, and canonical hashes must align")
         if len(self.actions) != 10:
@@ -68,10 +68,11 @@ class HybridGlobalSeeds:
     ) -> "HybridGlobalSeeds":
         """Create the exact-complete raster prefix and safe Frozen exploration suffix."""
         raster_candidates = tuple(raster_generator.generate(voxel_state))
-        if len(raster_candidates) != 4:
+        if not raster_candidates:
             raise GlobalPlanningFailure(
-                "hybrid global source requires exactly four exact-complete raster plans"
+                "hybrid global source requires at least one exact-complete raster plan"
             )
+        raster_bootstrap_count = len(raster_candidates)
         actions = [_action_rows(candidate.actions) for candidate in raster_candidates]
         source_ids = [
             (
@@ -121,7 +122,7 @@ class HybridGlobalSeeds:
                 raise RuntimeError("Frozen Global finalist provenance could not be recorded")
         reserve_index = 0
         while len(actions) < 10:
-            raster_index = reserve_index % 4
+            raster_index = reserve_index % raster_bootstrap_count
             actions.append(actions[raster_index])
             source_ids.append(
                 f"reserve:raster:{reserve_index}:{source_ids[raster_index]}"
@@ -135,7 +136,7 @@ class HybridGlobalSeeds:
             tuple(actions),
             tuple(source_ids),
             tuple(canonical_hashes),
-            4,
+            raster_bootstrap_count,
             nominal_actions,
             raw_to_nominal_seed,
             reference,

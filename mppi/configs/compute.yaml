@@ -13,10 +13,10 @@ profiles:
   1gpu:
     platform: gpu
     device_indices: [0]
-    rollout_batch_size: 8
+    rollout_batch_size: 4
     preallocate: false
   cpu:
     platform: cpu
     device_indices: [0]
-    rollout_batch_size: 4
+    rollout_batch_size: 1
     preallocate: false

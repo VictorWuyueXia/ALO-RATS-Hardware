@@ -2,6 +2,7 @@
 
 from dataclasses import replace
 from types import SimpleNamespace
+from unittest.mock import Mock
 
 import jax
 import numpy as np
@@ -82,6 +83,19 @@ def test_eleven_receipts_scans_and_periodic_order(workflow_case):
             prior = [event for event in events[:i] if event["event"] == "receipt"][-1]
             assert row["command_id"] == prior["receipt"]["command_id"]
     assert not np.shares_memory(session.state.tissue, plant._state.tissue)
+
+
+def test_display_uses_darker_larger_voxel_points(workflow_case, monkeypatch):
+    display = workflow_case[-1]
+    point_calls = Mock(side_effect=(101, 102))
+    monkeypatch.setattr(p, "addUserDebugPoints", point_calls)
+
+    display.draw()
+
+    target, protected = point_calls.call_args_list
+    assert target.args[1][0] == [0.05, 0.15, 0.55]
+    assert protected.args[1][0] == [0.55, 0.02, 0.04]
+    assert target.kwargs["pointSize"] == protected.kwargs["pointSize"] == 4
 
 
 @pytest.mark.parametrize("failure", ["acquisition", "stale", "abort", "blocked"])

@@ -12,7 +12,7 @@ import pybullet as p
 
 from laser_ablation.control.method import load_method
 from robot_scene import ROOT
-from simulation_cases import CASE_NAMES, LAUNCH_CASE_NAMES, simulation_case
+from simulation_cases import CASE_NAMES, LAUNCH_CASE_NAMES, SIMULATION_CONFIG_PATH, simulation_case
 
 
 @pytest.mark.parametrize(("platform", "count", "profile_name", "rollout_batch_size"), [
@@ -87,8 +87,10 @@ def test_diagnostic_does_not_replace_any_frozen_positive_case():
     case = simulation_case("compact_diagnostic")
     assert case.manifest()["random_seed"] == 20260902
     baseline = simulation_case("centered_rectangle")
+    assert SIMULATION_CONFIG_PATH == ROOT / "config/simulation_cases.yaml"
     assert baseline.designation.regions[0].half_size_xy_mm == (1.75, 1.75)
     assert baseline.designation.regions[0].depth_mm == 2.0
+    assert baseline.designation.protected_floor_mm == -3.6
     assert baseline.raster_settings["candidate_energies_j"] == (4.0, 8.0)
     assert case.scan().lower_boundary_mm == case.designation.grid_bounds_mm[2][0] == -2.0
     with pytest.raises(ValueError):
