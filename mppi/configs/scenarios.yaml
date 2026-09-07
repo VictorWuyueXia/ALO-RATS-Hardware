@@ -1,0 +1,245 @@
+default_scenario: square
+scenarios:
+  square:
+    enabled: true
+    kind: synthetic_square
+    workspace_xy_mm: [-2.25, 2.25]
+    xy_voxels: 37
+    voxel_spacing_mm: 0.125
+    z_axis_mm: [-2.0, -1.875, -1.75, -1.625, -1.5, -1.375, -1.25, -1.125, -1.0, -0.875, -0.75, -0.625, -0.5, -0.375, -0.25, -0.125, 0.0, 0.125]
+    target_half_width_mm: 1.75
+    candidate_grid_pitches_xy_mm: [[0.675, 0.675], [0.7, 0.7]]
+    candidate_grid_shape: [5, 5]
+    candidate_grid_center_xy_mm: [0.0, 0.0]
+    candidate_depth_repetitions: 16
+    candidate_energies_j: [4.0, 8.0]
+    physics_noise:
+      enabled: true
+      response_scale_standard_deviation: 0.50
+      response_scale_bounds: [0.3, 1.3]
+  flat_box:
+    enabled: true
+    kind: synthetic_flat_box
+    voxel_spacing_mm: 0.125
+    x_bounds_mm: [-2.25, 2.375]
+    y_bounds_mm: [-2.25, 2.375]
+    z_bounds_mm: [-2.0, 0.375]
+    target_half_width_xy_mm: [1.75, 1.25]
+    target_depth_mm: 1.5
+    constraint_depth_mm: 2.5
+    candidate_grid_pitches_xy_mm: [[0.675, 0.475], [0.7, 0.5]]
+    candidate_grid_shape: [5, 5]
+    candidate_grid_center_xy_mm: [0.0, 0.0]
+    candidate_depth_repetitions: 16
+    candidate_energies_j: [2.28, 2.3]
+    physics_noise:
+      enabled: true
+      response_scale_standard_deviation: 0.50
+      response_scale_bounds: [0.3, 1.3]
+  cavity:
+    enabled: true
+    kind: synthetic_cavity
+    voxel_spacing_mm: 0.125
+    x_bounds_mm: [-2.0, 2.125]
+    y_bounds_mm: [-2.0, 2.125]
+    z_bounds_mm: [-3.0, 0.625]
+    cavity_radius_mm: 0.375
+    cavity_center_depth_mm: 0.75
+    cavity_half_width_y_mm: 1.25
+    target_shell_radius_mm: 0.75
+    target_half_width_y_mm: 0.9
+    constraint_depth_mm: 3.5
+    candidate_grid_pitches_xy_mm: [[0.35, 0.35], [0.375, 0.375]]
+    candidate_grid_shape: [5, 5]
+    candidate_grid_center_xy_mm: [0.0, 0.0]
+    candidate_depth_repetitions: 16
+    candidate_energies_j: [2.28, 2.3]
+    physics_noise:
+      enabled: true
+      response_scale_standard_deviation: 0.50
+      response_scale_bounds: [0.3, 1.3]
+  stepped_target:
+    enabled: true
+    kind: synthetic_stepped_target
+    voxel_spacing_mm: 0.125
+    x_bounds_mm: [-2.25, 2.375]
+    y_bounds_mm: [-2.25, 2.375]
+    z_bounds_mm: [-2.5, 0.375]
+    target_half_width_xy_mm: [1.0, 0.9]
+    target_depths_mm: [0.75, 1.375]
+    interface_y_slope: 0.35
+    constraint_depth_mm: 2.25
+    candidate_grid_pitches_xy_mm: [[0.45, 0.45], [0.475, 0.475]]
+    candidate_grid_shape: [5, 5]
+    candidate_grid_center_xy_mm: [0.0, 0.0]
+    candidate_depth_repetitions: 16
+    candidate_energies_j: [2.28, 2.3]
+    physics_noise:
+      enabled: true
+      response_scale_standard_deviation: 0.50
+      response_scale_bounds: [0.3, 1.3]
+  vertical_control:
+    enabled: true
+    kind: native_3d_vertical_control
+    voxel_spacing_mm: 0.1
+    x_bounds_mm: [-1.5, 1.5]
+    y_bounds_mm: [-1.5, 1.5]
+    z_bounds_mm: [-4.0, 0.5]
+    target_radii_xy_mm: [0.72, 0.62]
+    target_depth_mm: 2.3
+    constraint_depth_mm: 3.7
+    candidate_grid_pitches_xy_mm: [[0.45, 0.38], [0.48, 0.4]]
+    candidate_grid_shape: [3, 3]
+    candidate_grid_center_xy_mm: [0.0, 0.0]
+    candidate_depth_repetitions: 24
+    candidate_energies_j: [2.28, 2.3]
+    physics_noise: &benchmark_noise
+      enabled: true
+      response_scale_standard_deviation: 0.50
+      response_scale_bounds: [0.3, 1.3]
+  oblique_surface:
+    enabled: true
+    kind: native_3d_oblique_surface
+    voxel_spacing_mm: 0.1
+    x_bounds_mm: [-1.5, 1.5]
+    y_bounds_mm: [-1.5, 1.5]
+    z_bounds_mm: [-4.0, 0.5]
+    target_radii_xy_mm: [0.72, 0.62]
+    surface_slopes_xy: [0.18, -0.10]
+    target_depth_mm: 2.3
+    constraint_depth_mm: 3.7
+    candidate_grid_pitches_xy_mm: [[0.45, 0.38], [0.48, 0.4]]
+    candidate_grid_shape: [3, 3]
+    candidate_grid_center_xy_mm: [0.0, 0.0]
+    candidate_depth_repetitions: 24
+    candidate_energies_j: [2.28, 2.3]
+    physics_noise: *benchmark_noise
+  concave_volume:
+    enabled: true
+    kind: native_3d_concave_volume
+    voxel_spacing_mm: 0.1
+    x_bounds_mm: [-1.5, 1.5]
+    y_bounds_mm: [-1.5, 1.5]
+    z_bounds_mm: [-4.0, 0.5]
+    outer_radii_xy_mm: [0.95, 0.78]
+    notch_center_x_mm: 0.62
+    notch_radii_xy_mm: [0.62, 0.48]
+    constraint_depth_mm: 3.7
+    candidate_grid_pitches_xy_mm: [[0.4, 0.34], [0.425, 0.36]]
+    candidate_grid_shape: [5, 5]
+    candidate_grid_center_xy_mm: [-0.1, 0.0]
+    candidate_depth_repetitions: 24
+    candidate_energies_j: [2.28, 2.3]
+    physics_noise: *benchmark_noise
+  stepped_depth:
+    enabled: true
+    kind: native_3d_stepped_depth
+    voxel_spacing_mm: 0.1
+    x_bounds_mm: [-1.5, 1.5]
+    y_bounds_mm: [-1.5, 1.5]
+    z_bounds_mm: [-4.0, 0.5]
+    target_half_width_xy_mm: [0.75, 0.6]
+    target_depths_mm: [1.35, 2.55]
+    constraint_depth_mm: 3.7
+    candidate_grid_pitches_xy_mm: [[0.34, 0.28], [0.36, 0.3]]
+    candidate_grid_shape: [5, 5]
+    candidate_grid_center_xy_mm: [0.0, 0.0]
+    candidate_depth_repetitions: 26
+    candidate_energies_j: [2.28, 2.3]
+    physics_noise: *benchmark_noise
+  cavity_sidewall:
+    enabled: true
+    kind: native_3d_cavity_sidewall
+    voxel_spacing_mm: 0.1
+    x_bounds_mm: [-1.5, 1.5]
+    y_bounds_mm: [-1.5, 1.5]
+    z_bounds_mm: [-4.0, 0.5]
+    cavity_center_xyz_mm: [0.1, 0.0, -1.45]
+    cavity_radius_mm: 0.58
+    target_shell_radius_mm: 0.79
+    target_half_width_y_mm: 0.42
+    tunnel_tilt_deg: 15.0
+    tunnel_radius_mm: 0.22
+    constraint_depth_mm: 3.7
+    candidate_grid_pitches_xy_mm: [[0.35, 0.3], [0.375, 0.32]]
+    candidate_grid_shape: [5, 3]
+    candidate_grid_center_xy_mm: [0.1, 0.0]
+    candidate_depth_repetitions: 24
+    candidate_energies_j: [2.28, 2.3]
+    physics_noise: *benchmark_noise
+  two_pulse_wide:
+    enabled: true
+    kind: native_3d_two_lobe_oracle
+    voxel_spacing_mm: 0.1
+    x_bounds_mm: [-2.0, 2.0]
+    y_bounds_mm: [-1.5, 1.5]
+    z_bounds_mm: [-4.0, 0.5]
+    lobe_center_separation_mm: 1.8
+    lobe_radii_xy_mm: [0.42, 0.42]
+    target_depth_mm: 1.6
+    constraint_depth_mm: 3.5
+    candidate_grid_pitches_xy_mm: [[0.45, 0.3], [0.5, 0.32]]
+    candidate_grid_shape: [5, 3]
+    candidate_grid_center_xy_mm: [0.0, 0.0]
+    candidate_depth_repetitions: 18
+    candidate_energies_j: [2.28, 2.3]
+    physics_noise: *benchmark_noise
+  repeat_depth:
+    enabled: true
+    kind: native_3d_repeat_depth_oracle
+    voxel_spacing_mm: 0.1
+    x_bounds_mm: [-1.5, 1.5]
+    y_bounds_mm: [-1.5, 1.5]
+    z_bounds_mm: [-6.0, 0.5]
+    target_radii_xy_mm: [0.42, 0.38]
+    target_depth_mm: 4.5
+    constraint_depth_mm: 5.5
+    candidate_grid_pitches_xy_mm: [[0.3, 0.3], [0.34, 0.34]]
+    candidate_grid_shape: [3, 3]
+    candidate_grid_center_xy_mm: [0.0, 0.0]
+    candidate_depth_repetitions: 45
+    candidate_energies_j: [2.28, 2.3]
+    physics_noise: *benchmark_noise
+  protected_boundary:
+    enabled: true
+    kind: native_3d_protected_boundary_oracle
+    voxel_spacing_mm: 0.1
+    x_bounds_mm: [-1.5, 1.5]
+    y_bounds_mm: [-1.5, 1.5]
+    z_bounds_mm: [-4.0, 0.5]
+    target_center_x_mm: -0.1
+    target_radii_xy_mm: [0.58, 0.42]
+    target_depth_mm: 1.35
+    protected_center_xyz_mm: [0.55, 0.0, -2.05]
+    protected_radius_mm: 0.3
+    candidate_grid_pitches_xy_mm: [[0.4, 0.3], [0.425, 0.32]]
+    candidate_grid_shape: [3, 3]
+    candidate_grid_center_xy_mm: [-0.1, 0.0]
+    candidate_depth_repetitions: 16
+    candidate_energies_j: [2.28, 2.3]
+    physics_noise: *benchmark_noise
+  mature_rectangle:
+    enabled: true
+    kind: mature_global_randomized_rectangle
+    geometry_seed: 101
+    voxel_spacing_mm: 0.2
+    x_bounds_mm: [-5.0, 5.0]
+    y_bounds_mm: [-5.0, 5.0]
+    z_bounds_mm: [-5.6, 0.8]
+    candidate_grid_pitches_xy_mm: [[0.59, 0.665], [0.62, 0.7]]
+    candidate_grid_shape: [9, 7]
+    candidate_grid_center_xy_mm: [1.06447801, -0.33738952]
+    candidate_depth_repetitions: 7
+    candidate_energies_j: [2.78, 2.80]
+    physics_noise: *benchmark_noise
+  brats:
+    enabled: false
+    kind: brats_2017
+    segmentation_path: null
+    protection_model: quarter_torus
+    crop_margin_mm: 2.0
+    isotropic_scale_factor: 0.1
+    physics_noise:
+      enabled: false
+      response_scale_standard_deviation: 0.15
+      response_scale_bounds: [0.3, 1.3]

@@ -1,0 +1,9 @@
+---
+alwaysApply: true
+---
+
+Always prefer parallel computing for parallel tasks.
+
+For some tasks that seem to need for loops at first glance, think if you can accelerate it by pre-printing parameters for each iteraition and parallel compute each loop.
+
+If you encounter long-wait-no-update script runtimes, stop the run, add update messeages in the scripts, and rerun

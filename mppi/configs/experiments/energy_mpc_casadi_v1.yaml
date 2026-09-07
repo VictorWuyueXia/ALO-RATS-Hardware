@@ -1,0 +1,51 @@
+experiment: energy_mpc_casadi_v1
+status: DEVELOPMENT_ONLY
+canonical: false
+formal_evidence: false
+scope: vertical energy-only surrogate parity and O1 development gates
+spatial_action_policy: preserve_nominal_x_y_tilt_and_order
+exact_authority: exact_voxel_full_tail_verification
+shared_configs:
+  physics: configs/physics.yaml
+  planner: configs/planner.yaml
+
+# These values are one global DEVELOPMENT preregistration. They must not be
+# changed per geometry or seed. Physical energy bounds, completion, and the
+# hard margin are deliberately absent: the loader injects their shared values.
+TUNABLE_DEVELOPMENT_HYPERPARAMETERS:
+  horizon: 1
+  d_max_mm: 2.0
+  roi_halo_mm: 0.2
+  roi_closure_voxels: 1
+  # An 18-case vertical parity sweep selected the largest tested smoothing
+  # that kept every one-step |delta Remaining| and |delta OC| <= 0.2 pp.
+  # This is a very sharp local approximation, not a new physical constant.
+  occupancy_smoothing_mm: 0.0001
+  crater_inclusion_epsilon_mm: 0.0001
+  tracking_base_weight: 0.25
+  tracking_boundary_band_mm: 0.2
+  minimum_target_removal_fraction: 0.0
+  energy_trust_region_j: 0.02
+  terminal_remaining_weight: 0.0
+  clearance_samples_per_axis: 7
+  solver_tolerance: 1.0e-8
+  solver_max_iterations: 300
+  ipopt_print_level: 0
+  weight_early:
+    remaining: 0.05
+    overcut: 0.0222
+    tracking: 0.0278
+    energy: 0.90
+  weight_late:
+    remaining: 0.05
+    overcut: 0.0222
+    tracking: 0.0278
+    energy: 0.90
+
+dependency_audit_environment: /home/cici/anaconda3/envs/seeplan/bin/python
+dependency_audit_expected:
+  casadi_version: 3.7.2
+  ipopt_scalar_nlp_status: Solve_Succeeded
+tilt_enabled: false
+mppi_enabled: false
+learning_enabled: false

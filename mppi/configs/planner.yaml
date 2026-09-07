@@ -1,0 +1,31 @@
+completion_remaining_pct: 10.0
+hard_margin_mm: 0.25
+native_3d:
+  validation_status: partial_development_geometries_only
+  initial_exact_budget: 48
+  refinement_exact_budget: 18
+  refinement_exact_budget_per_family: 6
+  refinement_seed_limit: 4
+  refinement_block_limit: 6
+  refinement_schedule:
+    - [0.15, 0.50]
+    - [0.075, 0.25]
+    - [0.025, 0.125]
+  coverage_pitches_mm: [0.6, 0.9]
+  maximum_pulses: 160
+  maximum_candidates: 300
+  maximum_repeats_per_anchor: 6
+  energy_fractions: [0.82, 0.20, 1.00, 0.60, 0.08, 0.40]
+  repeat_depth_fractions: [0.35, 0.65, 1.0]
+  pulse_count_fractions: [0.8, 1.0]
+  tilt_magnitude_rad: 0.261799388
+  grid_offsets_xy:
+    - [0.0, 0.0]
+    - [0.5, 0.5]
+  candidate_factor_profile: evidence_supported_phase4_v1
+  include_depth_fit_candidates: false
+  include_pulse_count_diversity: false
+  include_repeat_depth_diversity: false
+  include_radial_tilt_candidates: false
+  include_overlap_fit_candidates: true
+  exact_selection: lexicographic_completion_safety_then_minimum_total_overcut

@@ -1,0 +1,13 @@
+physics:
+  tissue_density: 1.0
+  ablation_threshold: 1.939
+  specific_enthalpy: 2.99504007287244
+  spot_size_mm: 0.483187452
+  super_gaussian_power: 12.72661
+  min_energy_j: 2.0
+  max_energy_j: 14.0
+action_bounds:
+  x_mm: [-5.0, 5.0]
+  y_mm: [-5.0, 5.0]
+  tilt_x_rad: [-0.261799388, 0.261799388]
+  tilt_y_rad: [-0.261799388, 0.261799388]

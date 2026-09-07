@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "laser-ablation-icra2027"
+version = "0.1.0"
+description = "Auditable exact-voxel and SDF framework for volumetric laser-ablation planning"
+requires-python = ">=3.10"
+dependencies = [
+  "matplotlib>=3.6",
+  "nibabel>=5.0",
+  "numpy>=1.23",
+  "PyYAML>=6.0",
+  "scipy>=1.9",
+  "jax>=0.4.30",
+  "casadi>=3.7,<4",
+]
+
+[project.optional-dependencies]
+test = ["pytest>=7.0"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"
+norecursedirs = [".archive"]

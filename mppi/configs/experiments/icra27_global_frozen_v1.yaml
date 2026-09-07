@@ -1,0 +1,34 @@
+schema: icra27-global-freeze/v1
+method_id: icra27-global-frozen-v1
+artifact_status: canonical_development_freeze
+
+development_fixture:
+  geometry_id: rounded_bottom
+  formal_test: false
+
+shared_configs:
+  physics: configs/physics.yaml
+  planner: configs/planner.yaml
+
+geometry_aware_global:
+  anchor_count: 3
+  layout_families: [principal_axis, weighted_kmeans]
+  order_patterns: [forward, reverse, center_out]
+  depth_margin_mm: 0.05
+  refinement_position_scales_mm: [0.20, 0.10, 0.05, 0.025, 0.0125]
+  refinement_energy_scales_j: [0.60, 0.30, 0.15, 0.075, 0.0375]
+  refinement_passes_per_scale: 2
+  refinement_mode: legacy_coordinate
+
+final_authority:
+  evaluator: exact_voxel_whole_plan
+  ordering: exact_terminal_key
+  deterministic_final_tie_breaker: planned_action_hash
+
+excluded_from_global_definition:
+  - jax_surrogate_selection
+  - mppi
+  - energy_mpc
+  - learning
+  - controller_execution
+  - frozen_geometry_benchmark

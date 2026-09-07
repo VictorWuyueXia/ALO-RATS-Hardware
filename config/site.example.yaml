@@ -1,0 +1,5 @@
+# Copy to config/site.yaml and enter only the laboratory's verified robot endpoint and safe pose.
+robot_ip: 192.168.1.103
+safe_joint_pose_rad: [1.610071, -1.041262, 1.274265, -3.389604, -1.140393, 1.535890]
+move_speed_rad_s: 0.10
+move_acceleration_rad_s2: 2.0

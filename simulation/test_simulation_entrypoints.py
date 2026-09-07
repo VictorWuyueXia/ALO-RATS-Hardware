@@ -1,0 +1,115 @@
+"""Fresh-process isolation, output ownership, and failed-suite accounting checks."""
+
+import json
+import os
+from pathlib import Path
+import subprocess
+import sys
+from types import SimpleNamespace
+
+import pytest
+import pybullet as p
+
+from simulation_cases import CASE_NAMES, LAUNCH_CASE_NAMES, simulation_case
+
+
+def test_simulation_guard_rejects_physical_imports_and_connections():
+    code = """
+from simulation_isolation import enforce_simulation_isolation
+violations = enforce_simulation_isolation()
+import importlib, socket, sys
+sys.path.append(str(__import__('pathlib').Path.cwd().parent))
+for name in ('rtde_control', 'oct', 'UR5Controller'):
+    try:
+        importlib.import_module(name)
+    except RuntimeError:
+        pass
+    else:
+        raise AssertionError(name)
+with socket.socket() as connection:
+    try:
+        connection.connect(('127.0.0.1', 9))
+    except RuntimeError:
+        pass
+    else:
+        raise AssertionError('Socket connection was not blocked')
+assert len(violations) == 4, violations
+"""
+    result = subprocess.run([sys.executable, "-c", code], cwd=Path(__file__).parent,
+                            capture_output=True, text=True, timeout=30)
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
+def test_existing_output_is_untouched_by_live_entrypoint(tmp_path):
+    sentinel = tmp_path / "existing.txt"
+    sentinel.write_text("Retain this prior run")
+    result = subprocess.run([sys.executable, str(Path(__file__).with_name("run_simulation.py")),
+                             "--case", "compact_diagnostic", "--output-dir", str(tmp_path)],
+                            env={**os.environ, "PYTHONDONTWRITEBYTECODE": "1"},
+                            capture_output=True, text=True, timeout=30)
+    assert result.returncode != 0 and "FileExistsError" in result.stderr
+    assert sentinel.read_text() == "Retain this prior run"
+    assert sorted(path.name for path in tmp_path.iterdir()) == ["existing.txt"]
+
+
+def test_diagnostic_does_not_replace_any_frozen_positive_case():
+    assert len(CASE_NAMES) == 6 and "compact_diagnostic" not in CASE_NAMES
+    assert "compact_diagnostic" in LAUNCH_CASE_NAMES
+    case = simulation_case("compact_diagnostic")
+    assert case.scan().lower_boundary_mm == case.designation.grid_bounds_mm[2][0] == -2.0
+    with pytest.raises(ValueError):
+        simulation_case("unrecognized_task")
+
+
+@pytest.mark.parametrize("key", [10, 13, p.B3G_RETURN])
+def test_integrated_start_consumes_return_without_terminal_input(key, tmp_path, monkeypatch):
+    from workflow_display import WorkflowDisplay
+    client = p.connect(p.DIRECT)
+    try:
+        display = WorkflowDisplay(client, tmp_path / "frames")
+        display.gui = True
+        events = iter([{}, {key: p.KEY_WAS_TRIGGERED}])
+        monkeypatch.setattr(display, "poll", lambda: next(events))
+        monkeypatch.setattr(display, "status", lambda message: None)
+        display.wait_for_start()
+    finally:
+        p.disconnect(client)
+
+
+def test_killed_worker_without_output_fails_and_preserves_not_run_cases(tmp_path, monkeypatch):
+    import check_simulation
+
+    returns = iter([0, -9])
+    calls = []
+    def run(command, **kwargs):
+        calls.append(command)
+        return SimpleNamespace(returncode=next(returns))
+    monkeypatch.setattr(check_simulation.subprocess, "run",
+                        run)
+    monkeypatch.chdir(tmp_path)
+    summary = check_simulation.check_suite(Path("suite"))
+    assert Path(calls[1][-1]).is_absolute()
+    assert not summary["URDF_MPPI_TASK_SUITE_COMPLETE"]
+    first = summary["direct_cases"]["centered_rectangle"]
+    assert not first["accepted"] and first["process_returncode"] == -9
+    assert all("not_run" in value for name, value in summary["direct_cases"].items()
+               if name != "centered_rectangle")
+    saved = json.loads((tmp_path / "suite/centered_rectangle/acceptance.json").read_text())
+    assert saved == first
+
+
+def test_cancelled_gui_preserves_failed_suite_summary(tmp_path, monkeypatch):
+    """Controlled worker results test aggregation only, not treatment acceptance."""
+    import check_simulation
+
+    def validate(path):
+        if path.name == "gui":
+            raise FileNotFoundError("Operator cancelled before workflow start")
+        return {"accepted": True, "truth_metrics": {}, "requested_actions": [],
+                "trajectory_ids": [], "active_prefixes": []}
+    monkeypatch.setattr(check_simulation, "validate_run", validate)
+    monkeypatch.setattr(check_simulation.subprocess, "run", lambda *args, **kwargs: SimpleNamespace(returncode=0))
+    summary = check_simulation.check_suite(tmp_path / "suite")
+    assert not summary["gui_completion"] and not summary["URDF_MPPI_TASK_SUITE_COMPLETE"]
+    assert "Operator cancelled" in summary["gui_result"]["incomplete_evidence"]
+    assert (tmp_path / "suite/suite_result.json").is_file()

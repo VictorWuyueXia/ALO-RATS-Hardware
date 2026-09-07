@@ -1,0 +1,30 @@
+experiment: square_branch128_repair10_path_integral_diagnostic
+status: SHOW_OF_CONCEPT_DIAGNOSTIC
+compute_config: configs/compute.yaml
+scenario_config: configs/scenarios.yaml
+shared_configs:
+  physics: configs/physics.yaml
+  planner: configs/planner.yaml
+  frozen_global: configs/experiments/icra27_global_frozen_v1.yaml
+  energy_mpc: configs/experiments/energy_mpc_casadi_v1.yaml
+alignment_persistence: 3
+periodic_repair_pulses: 10
+maximum_pulses: 400
+maximum_repairs_per_prefix: 1
+mppi:
+  max_anchors: 4
+  samples_per_anchor: 128
+  iterations: 1
+  beta: 0.70
+  kappa: [0.0025, 0.0025, 0.0005, 0.0005, 0.01]
+  lambda_remaining: 0.60
+  lambda_overcut: 0.40
+  lambda_anchor: 0.0
+  temperature: 0.05
+  segment_minimum_pulses: 20
+  segment_maximum_count: 5
+  segment_retain_fraction: 0.20
+  device_memory_cap_gib: 8.0
+  segment_working_pool_gib: 1.0
+  roi_match_cosine_min: -1.0
+  roi_linearization_cosine_min: 0.995

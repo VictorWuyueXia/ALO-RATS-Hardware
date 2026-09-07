@@ -1,0 +1,16 @@
+name: alo-rats-hardware
+channels:
+  - conda-forge
+dependencies:
+  - python=3.11
+  - pip
+  - matplotlib
+  - numpy
+  - pybullet
+  - pyvista
+  - pyyaml
+  - pytest
+  - scipy
+  - line_profiler
+  - pip:
+      - ur-rtde>=1.6

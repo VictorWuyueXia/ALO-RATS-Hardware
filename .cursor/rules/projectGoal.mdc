@@ -1,0 +1,9 @@
+---
+alwaysApply: true
+---
+
+This is a clean, history-free runtime workspace for integrating the ALO-RATS MPPI planner-controller with the collaborator's UR5e/PyBullet support model. Its purpose is to establish a reproducible route from a registered OCT observation and user-designated target to unchanged MPPI planning, UR5e-compatible motion geometry, and eventually reobservation/replanning.
+
+It contains the unchanged MPPI source and method configuration, the supplied UR5e URDF/meshes, processed-OCT volume interchange, mouse-driven target designation, PyBullet simulation, and a robot-motion-only hardware dry run. It contains no Nd:YAG/PWM/laser-device code, no laser firing path, no raw OCT driver, no results, and no old Git history.
+
+Read the current situation and transfer handoff before preparing a new computer. In particular, the OCT scanner trigger is not present in the collaborator checkout, and the package currently accepts a processed, registered OCT volume rather than raw scanner data.
