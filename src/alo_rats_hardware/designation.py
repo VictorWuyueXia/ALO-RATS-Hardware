@@ -121,7 +121,8 @@ class VolumeTaskEditor:
             self.volume_ax.legend(loc="upper right")
             self.message.set_text(f"Target {state.initial_target_volume_mm3:.3f} mm³; input is exact 0.1 mm occupancy.")
         self.volume_ax.set(xlabel="X [mm]", ylabel="Y [mm]", zlabel="Z [mm]", title="Processed OCT target and protected volume")
-        self.figure.canvas.draw_idle()
+        # Paint the approved geometry before Qt enters its blocking event loop.
+        self.figure.canvas.draw()
 
     def save(self, event):
         """Persist the approved OCT, task, and immutable voxel masks for the controller session."""

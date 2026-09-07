@@ -3,6 +3,7 @@
 from dataclasses import replace
 import json
 
+import jax
 import numpy as np
 import pytest
 
@@ -25,7 +26,7 @@ def recorded_run(workflow_case):
     output = records.output
     session.maximum_pulses = 1
     case = simulation_case("centered_rectangle")
-    method = load_method(ROOT / "mppi/configs/controller.yaml")
+    method = load_method(ROOT / "mppi/configs/controller.yaml", tuple(jax.devices()))
     write_json(output / "case.json", case.manifest())
     write_json(output / "method.json", {"inputs": method.source_values})
     write_json(output / "registration.json", {"calibration": robot.calibration,

@@ -10,7 +10,27 @@ from types import SimpleNamespace
 import pytest
 import pybullet as p
 
+from laser_ablation.control.method import load_method
+from robot_scene import ROOT
 from simulation_cases import CASE_NAMES, LAUNCH_CASE_NAMES, simulation_case
+
+
+@pytest.mark.parametrize(("platform", "count", "profile_name", "rollout_batch_size"), [
+    ("cpu", 1, "cpu", 4), ("gpu", 1, "1gpu", 8),
+    ("cuda", 4, "4gpu", 32), ("gpu", 8, "8gpu", 64),
+])
+def test_method_matches_the_detected_jax_device_layout(
+        platform, count, profile_name, rollout_batch_size):
+    devices = tuple(SimpleNamespace(platform=platform) for _ in range(count))
+    method = load_method(ROOT / "mppi/configs/controller.yaml", devices)
+    assert method.compute_profile == profile_name
+    assert method.mppi.rollout_batch_size == rollout_batch_size
+
+
+def test_method_rejects_an_unconfigured_jax_device_layout():
+    devices = tuple(SimpleNamespace(platform="gpu") for _ in range(2))
+    with pytest.raises(ValueError, match="No unique compute profile"):
+        load_method(ROOT / "mppi/configs/controller.yaml", devices)
 
 
 def test_simulation_guard_rejects_physical_imports_and_connections():
@@ -28,11 +48,18 @@ for name in ('rtde_control', 'oct', 'UR5Controller'):
         raise AssertionError(name)
 with socket.socket() as connection:
     try:
-        connection.connect(('127.0.0.1', 9))
+        connection.connect(('192.0.2.1', 9))
     except RuntimeError:
         pass
     else:
         raise AssertionError('Socket connection was not blocked')
+with socket.socket() as connection:
+    try:
+        connection.connect(('127.0.0.1', 9))
+    except ConnectionRefusedError:
+        pass
+    else:
+        raise AssertionError('Loopback connection unexpectedly succeeded')
 assert len(violations) == 4, violations
 """
     result = subprocess.run([sys.executable, "-c", code], cwd=Path(__file__).parent,

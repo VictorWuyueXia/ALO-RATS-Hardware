@@ -1,5 +1,6 @@
 """Verify the real four-raster source on every frozen operator-designated task."""
 
+import jax
 import pytest
 
 from robot_scene import ROOT
@@ -16,7 +17,7 @@ def test_four_exact_complete_rasters_for_frozen_task(name):
     """Seed feasibility alone does not prove nonlinear MPPI, residual planning, or low overcut."""
     case = simulation_case(name)
     state = designate_task(case.scan(), case.designation).state
-    method = load_method(ROOT / "mppi/configs/controller.yaml")
+    method = load_method(ROOT / "mppi/configs/controller.yaml", tuple(jax.devices()))
     verifier = ExactPlanVerifier(ExactVoxelSimulator(method.physics, method.bounds),
                                  method.completion_remaining_pct, method.hard_margin_mm)
     seeds = ConfiguredRasterPlanGenerator(name, case.raster_settings, verifier).generate(state)

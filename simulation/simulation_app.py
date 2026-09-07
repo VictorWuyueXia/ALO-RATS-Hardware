@@ -28,11 +28,15 @@ def execute_case(case, scan, designation, output, *, gui, wait_for_start, isolat
     """Share exactly the same causal loop between DIRECT checks and live GUI execution."""
     output = Path(output).resolve()
     records = RunRecords(output)
-    method = load_method(ROOT / "mppi/configs/controller.yaml")
-    if jax.default_backend() != "cpu":
-        raise RuntimeError("Simulation entry point must select CPU before JAX initialization")
-    components = method.components(case.name, case.raster_settings, tuple(jax.devices("cpu")), RANDOM_SEED)
-    write_json(output / "method.json", {"inputs": method.source_values, "source_sha256": method.source_hashes})
+    # Use every device exposed by JAX and preserve the selected backend in the run record.
+    devices = tuple(jax.devices())
+    method = load_method(ROOT / "mppi/configs/controller.yaml", devices)
+    components = method.components(case.name, case.raster_settings, devices, RANDOM_SEED)
+    write_json(output / "method.json", {
+        "inputs": method.source_values, "source_sha256": method.source_hashes,
+        "compute_profile": method.compute_profile, "jax_backend": jax.default_backend(),
+        "jax_devices": [str(device) for device in devices],
+    })
     client = p.connect(p.GUI if gui else p.DIRECT)
     try:
         display = WorkflowDisplay(client, output / "gui_frames")

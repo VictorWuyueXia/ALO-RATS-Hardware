@@ -19,7 +19,7 @@ There is no laser command, PWM import, or plan-action execution in this reposito
 
 ## Operator sequence
 
-1. Run the no-device URDF check and inspect `outputs/robot_scene/robot_scene.json`.
+1. Run `python scripts/check_robot_scene.py` and inspect `robot_scene.json` in the timestamped output directory printed by the command.
 2. Copy the processed OCT volume onto the robot workstation. Do not substitute a raw image folder, `.pcd`, or unregistered point cloud.
 3. Run `scripts/run_hardware_dry_run.py` without `--move-safe-pose`.
 4. Use the mouse to drag one or more target footprints. Set depth below the registered initial surface and set the protected Z floor. Click **Approve / save** only after the displayed target and protected masks match the intended geometry.

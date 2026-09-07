@@ -124,7 +124,8 @@ class TaskEditor:
                                   "Depths follow planning Z; unequal left/right depths create a stepped floor.")
         self.volume_ax.set(xlabel="X [mm]", ylabel="Y [mm]", zlabel="Z [mm]",
                            title="Registered scan + designated target/protection")
-        self.figure.canvas.draw_idle()
+        # Paint the approved geometry before Qt enters its blocking event loop.
+        self.figure.canvas.draw()
 
     def save(self, event):
         """Persist the exact approved input and voxel/SDF-ready observation identity."""

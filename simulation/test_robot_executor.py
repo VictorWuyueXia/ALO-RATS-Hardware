@@ -2,6 +2,7 @@
 
 from time import time
 
+import jax
 import numpy as np
 import pybullet as p
 import pytest
@@ -22,7 +23,7 @@ from laser_ablation.planning.global_3d.terminal_verification import ExactPlanVer
 
 @pytest.fixture
 def apparatus():
-    method = load_method(ROOT / "mppi/configs/controller.yaml")
+    method = load_method(ROOT / "mppi/configs/controller.yaml", tuple(jax.devices()))
     case = simulation_case("centered_rectangle")
     state = designate_task(nominal_scan(), case.designation).state
     verifier = ExactPlanVerifier(ExactVoxelSimulator(method.physics, method.bounds), 10, 0.25)

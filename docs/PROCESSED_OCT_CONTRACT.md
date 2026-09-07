@@ -23,7 +23,9 @@ The workflow rejects raw `.jpg`/NIfTI scanner folders, point-cloud files, incomp
 For installation/UI testing only:
 
 ```bash
-python scripts/create_nominal_oct_fixture.py --output /tmp/nominal_processed_oct.npz
+mkdir -p outputs
+fixture_dir=$(mktemp -d "$PWD/outputs/nominal-fixture.XXXXXX")
+python scripts/create_nominal_oct_fixture.py --output "$fixture_dir/nominal_processed_oct.npz"
 ```
 
 The generated file is simulated and must never be represented as an OCT measurement.

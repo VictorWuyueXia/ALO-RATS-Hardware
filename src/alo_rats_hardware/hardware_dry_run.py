@@ -5,6 +5,8 @@ import json
 from pathlib import Path
 from time import time
 
+import jax
+
 from laser_ablation.control.method import load_method
 
 from .designation import approve_volume_task
@@ -24,7 +26,8 @@ def run(site_path, scan_path, output, move_safe_pose):
         raise FileExistsError(f"Use a new output directory: {output}")
     site, scan = load_site(site_path), load_processed_volume(scan_path)
     task = approve_volume_task(scan, output)
-    method = load_method(MPPI_CONTROLLER)
+    devices = tuple(jax.devices())
+    method = load_method(MPPI_CONTROLLER, devices)
     robot = UR5eConnection(site)
     try:
         robot.connect()
@@ -38,6 +41,8 @@ def run(site_path, scan_path, output, move_safe_pose):
         "timestamp_s": time(), "laser_control_present": False, "motion_commanded": bool(move_safe_pose),
         "robot_before": before, "robot_after": after, "processed_oct": volume_summary(scan),
         "task_id": task.task_id, "mppi_method_source_hashes": method.source_hashes,
+        "compute_profile": method.compute_profile, "jax_backend": jax.default_backend(),
+        "jax_devices": [str(device) for device in devices],
     }, indent=2) + "\n", encoding="utf-8")
 
 

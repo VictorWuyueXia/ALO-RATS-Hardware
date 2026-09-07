@@ -1,10 +1,7 @@
 """Approve a nominal scan-defined task and run the live MPPI/URDF simulation."""
 
 import argparse
-import os
 from pathlib import Path
-
-os.environ["JAX_PLATFORMS"] = "cpu"
 
 from simulation_isolation import enforce_simulation_isolation
 

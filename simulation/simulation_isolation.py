@@ -1,4 +1,4 @@
-"""Explicitly deny physical device imports and Python socket connections in simulation."""
+"""Explicitly deny physical device imports and non-local Python socket connections in simulation."""
 
 import importlib.abc
 import sys
@@ -18,8 +18,12 @@ def enforce_simulation_isolation():
                 raise RuntimeError(f"Physical module is forbidden in simulation: {fullname}")
     def audit(event, args):
         if event == "socket.connect":
+            # Qt uses a Windows loopback socket pair for its local GUI event loop.
+            address = args[1]
+            if isinstance(address, tuple) and address[0] in {"127.0.0.1", "::1"}:
+                return
             violations.append({"kind": "socket_connect"})
-            raise RuntimeError("Socket connections are forbidden in simulation")
+            raise RuntimeError("Non-local socket connections are forbidden in simulation")
     if any(part.startswith(FORBIDDEN_MODULES) for name in sys.modules for part in name.split(".")):
         raise RuntimeError("A physical module was loaded before the simulation guard")
     sys.meta_path.insert(0, Guard())

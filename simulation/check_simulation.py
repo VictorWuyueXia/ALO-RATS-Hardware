@@ -6,8 +6,6 @@ from pathlib import Path
 import subprocess
 import sys
 
-os.environ["JAX_PLATFORMS"] = "cpu"
-
 from run_records import write_json
 from simulation_cases import CASE_NAMES, simulation_case
 from validate_simulation import validate_run

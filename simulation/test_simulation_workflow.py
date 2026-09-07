@@ -3,6 +3,7 @@
 from dataclasses import replace
 from types import SimpleNamespace
 
+import jax
 import numpy as np
 import pybullet as p
 import pytest
@@ -42,7 +43,7 @@ class RecordingPlanner:
 
 @pytest.fixture
 def workflow_case(tmp_path):
-    method = load_method(ROOT / "mppi/configs/controller.yaml")
+    method = load_method(ROOT / "mppi/configs/controller.yaml", tuple(jax.devices()))
     case = simulation_case("centered_rectangle")
     client = p.connect(p.DIRECT)
     try:

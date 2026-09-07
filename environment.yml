@@ -2,15 +2,16 @@ name: alo-rats-hardware
 channels:
   - conda-forge
 dependencies:
-  - python=3.11
-  - pip
-  - matplotlib
-  - numpy
-  - pybullet
-  - pyvista
-  - pyyaml
-  - pytest
-  - scipy
-  - line_profiler
+  # Pin the tested runtime versions so the environment can be recreated consistently.
+  - python=3.11.16
+  - pip=26.2.1
+  - matplotlib=3.11.1
+  - numpy=2.4.6
+  - pybullet=3.25
+  - pyvista=0.48.4
+  - pyyaml=6.0.3
+  - pytest=9.1.1
+  - line_profiler=5.0.2
   - pip:
-      - ur-rtde>=1.6
+      - scipy==1.17.1
+      - ur-rtde==1.6.5

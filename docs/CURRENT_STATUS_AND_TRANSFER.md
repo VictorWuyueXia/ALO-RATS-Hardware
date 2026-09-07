@@ -20,7 +20,7 @@ The second path is deliberately a robot-motion-only dry run. It cannot trigger a
 
 - `mppi/`: exact copied MPPI runtime source and configuration authority.
 - `assets/ur5e/`: collaborator-supplied UR5e URDF and its referenced mesh assets.
-- `simulation/`: PyBullet-only MPPI workflow, virtual ablation, and interaction preview. Its isolation guard blocks RTDE, OCT, laser, and socket access.
+- `simulation/`: PyBullet-only MPPI workflow, virtual ablation, and interaction preview. Its isolation guard blocks RTDE, OCT, laser, and all non-local socket access.
 - `src/alo_rats_hardware/`: strict processed-OCT importer, task-designation UI, RTDE state/safe-motion client, and dry-run entry point.
 - `config/site.example.yaml`: the only device-specific configuration template. `config/site.yaml` is local and Git-ignored.
 
@@ -28,7 +28,7 @@ The repository intentionally excludes the old Git histories, datasets, artifacts
 
 ## Validation completed on the development machine
 
-- `87 passed` with `JAX_PLATFORMS=cpu`.
+- `92 passed` on the detected development-machine backend, including CPU/1-GPU/4-GPU/8-GPU profile-selection contracts.
 - The supplied URDF loaded in headless PyBullet with all 15 required URDF/mesh assets.
 - The nominal processed-OCT fixture passed the strict volumetric interchange loader.
 - The hardware command-line entry point imports without loading RTDE until an explicit connection request.
@@ -47,13 +47,19 @@ These results establish software packaging and no-device behavior only. They do 
    python -m pip install -e ./mppi -e .
    ```
 
+   On Windows PowerShell, use `python -m pip install -e .\mppi -e .`; the editable installation is required even when the Conda environment already exists.
+
 3. Run the no-device checks from a desktop login session:
 
    ```bash
-   python scripts/check_robot_scene.py
-   python scripts/create_nominal_oct_fixture.py --output /tmp/nominal_processed_oct.npz
-   python -m pytest -q tests simulation/test_scan_adapter.py simulation/test_robot_executor.py
+   mkdir -p outputs
+   check_root=$(mktemp -d "$PWD/outputs/checks.XXXXXX")
+   python simulation/check_robot_scene.py --output-dir "$check_root/robot_scene"
+   python scripts/create_nominal_oct_fixture.py --output "$check_root/nominal_processed_oct.npz"
+   python -m pytest -q --basetemp "$check_root/pytest" tests simulation/test_scan_adapter.py simulation/test_robot_executor.py
    ```
+
+   In Windows PowerShell, create `$check_root` under `outputs`, pass `(Join-Path $check_root "robot_scene")` to `simulation\check_robot_scene.py --output-dir`, and pass `(Join-Path $check_root "pytest")` to pytest with `--basetemp`. The full PowerShell block is in the repository README and experiment runbook.
 
 4. For the UR5e dry run, copy `config/site.example.yaml` to `config/site.yaml`, then replace every value with laboratory-verified values. The copied endpoint and joint pose are historical values from the collaborator script, not a calibration certificate.
 5. Verify the hardware machine can import the RTDE modules:
@@ -77,11 +83,11 @@ The final OCT command is expected to fail with this repository alone. A successf
 
 ```bash
 demo_root=$(mktemp -d /tmp/alo-rats-simulation.XXXXXX)
-JAX_PLATFORMS=cpu python simulation/run_simulation.py \
+python simulation/run_simulation.py \
   --case compact_diagnostic --output-dir "$demo_root/run"
 ```
 
-Approve the displayed geometry, then focus the PyBullet window and press Enter. This runs one process: designation, MPPI planning, checked URDF motion, virtual ablation, synthetic volumetric observation, and replanning. The compact diagnostic intentionally fails its frozen treatment-acceptance gate, so a nonzero exit is expected after `acceptance.json` is written.
+Approve the displayed geometry, then focus the PyBullet window and press Enter. JAX automatically uses its detected default backend and the matching configured MPPI compute profile; `method.json` records both. This runs one process: designation, MPPI planning, checked URDF motion, virtual ablation, synthetic volumetric observation, and replanning. The compact diagnostic intentionally fails its frozen treatment-acceptance gate, so a nonzero exit is expected after `acceptance.json` is written.
 
 ### Processed-OCT plus robot dry run
 

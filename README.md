@@ -20,14 +20,39 @@ The environment uses PyBullet from Conda-forge and installs `ur-rtde` from PyPI.
 ## First machine check
 
 ```bash
-python scripts/check_robot_scene.py
-python scripts/create_nominal_oct_fixture.py --output /tmp/nominal_processed_oct.npz
-python -m pytest -q tests simulation/test_scan_adapter.py simulation/test_robot_executor.py
+mkdir -p outputs
+check_root=$(mktemp -d "$PWD/outputs/checks.XXXXXX")
+python simulation/check_robot_scene.py --output-dir "$check_root/robot_scene"
+python scripts/create_nominal_oct_fixture.py --output "$check_root/nominal_processed_oct.npz"
+python -m pytest -q --basetemp "$check_root/pytest" tests simulation/test_scan_adapter.py simulation/test_robot_executor.py
 ```
 
-The first command produces `outputs/robot_scene/robot_scene.json`; it loads the supplied URDF in headless PyBullet and does not import RTDE or connect to any device. The fixture is synthetic and exists only to test the OCT/designation UI.
+The scene command produces `$check_root/robot_scene/robot_scene.json`; it loads the supplied URDF in headless PyBullet and does not import RTDE or connect to any device. The fixture is synthetic and exists only to test the OCT/designation UI. A unique check root preserves prior evidence and gives pytest a known writable temporary directory.
 
-The repository snapshot passed 87 no-device tests on the development machine. The checks validate the processed-OCT contract, URDF asset closure, PyBullet interaction, controller/session interfaces, and explicit simulation isolation. They do not validate an OCT scanner, a UR5e connection, laser focus, or tissue cutting.
+On Windows development workstations, use PowerShell syntax after activating `alo-rats-hardware`:
+
+```powershell
+python -m pip install -e .\mppi -e .
+$check_root = Join-Path $PWD ("outputs\checks-" + (Get-Date -Format "yyyyMMdd-HHmmssfff"))
+New-Item -ItemType Directory -Path $check_root | Out-Null
+python simulation\check_robot_scene.py --output-dir (Join-Path $check_root "robot_scene")
+python scripts\create_nominal_oct_fixture.py --output (Join-Path $check_root "nominal_processed_oct.npz")
+python -m pytest -q --basetemp (Join-Path $check_root "pytest") tests simulation/test_scan_adapter.py simulation/test_robot_executor.py
+```
+
+The editable-install command is required even when the Conda environment exists.
+
+On an Ubuntu NVIDIA workstation, install the CUDA-enabled JAX wheel and verify the devices exposed to the program:
+
+```bash
+nvidia-smi
+python -m pip install --upgrade "jax[cuda13]"
+python -c "import jax; print('backend:', jax.default_backend()); print('devices:', jax.devices())"
+```
+
+The backend must print `gpu` and list every intended GPU before starting an experiment. The simulation automatically selects the matching `1gpu`, `4gpu`, or `8gpu` MPPI profile; an unconfigured GPU count fails explicitly. On a CPU-only JAX installation it selects the `cpu` profile. Native Windows JAX does not support NVIDIA CUDA, so PowerShell runs use the detected CPU backend; use the Ubuntu robot workstation or WSL2 for GPU execution. PyBullet may use the graphics GPU for OpenGL display, but its rigid-body and inverse-kinematics computations remain CPU-side.
+
+The repository snapshot passed 92 no-device tests on the development machine. The checks validate the processed-OCT contract, URDF asset closure, PyBullet interaction, controller/session interfaces, automatic compute-profile selection, and explicit simulation isolation. They do not validate an OCT scanner, a UR5e connection, laser focus, or tissue cutting.
 
 ## Robot and processed-OCT dry run
 
@@ -54,11 +79,11 @@ The existing integrated demonstration remains separate from the hardware path:
 
 ```bash
 demo_root=$(mktemp -d /tmp/alo-rats-simulation.XXXXXX)
-JAX_PLATFORMS=cpu python simulation/run_simulation.py \
+python simulation/run_simulation.py \
   --case compact_diagnostic --output-dir "$demo_root/run"
 ```
 
-It runs one process: designation → unchanged MPPI → checked URDF motion → virtual pulse → synthetic volume observation → replanning. It is a simulation-only application: `simulation/simulation_isolation.py` rejects RTDE, OCT, laser modules, and socket connections. The compact diagnostic is not an acceptance-quality treatment result; inspect its `acceptance.json`.
+It runs one process: designation → unchanged MPPI → checked URDF motion → virtual pulse → synthetic volume observation → replanning. `method.json` records the selected compute profile, JAX backend, and device list. It is a simulation-only application: `simulation/simulation_isolation.py` rejects RTDE, OCT, laser modules, and all non-local socket connections. The compact diagnostic is not an acceptance-quality treatment result; inspect its `acceptance.json`.
 
 For a lightweight robot-interaction preview that does not run MPPI, use:
 

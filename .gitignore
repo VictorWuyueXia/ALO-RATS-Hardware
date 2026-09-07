@@ -8,3 +8,4 @@ site.yaml
 *.npz
 *.png
 *.csv
+*-CN.md
