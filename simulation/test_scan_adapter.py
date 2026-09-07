@@ -10,7 +10,7 @@ import pytest
 from scipy.spatial.transform import Rotation
 
 from laser_ablation.geometry.sdf import SDFObserver
-from scan_adapter import designate_task, export_surface, export_volume, observe_task
+from scan_adapter import SPACING_MM, designate_task, export_surface, export_volume, observe_task
 from scan_fixtures import nominal_designation, nominal_scan, reexpress_scan
 from surface_scan import VolumetricScan, load_scan, save_scan
 from task_designation import TargetRegion, load_designation
@@ -21,11 +21,12 @@ def test_analytic_scan_volume_and_sdf(tilted):
     scan = nominal_scan(tilted=tilted)
     task = designate_task(scan, nominal_designation())
     state = task.state
+    assert state.grid_shape == (28, 28, 18)
     x, y = np.meshgrid(state.x_axis_mm, state.y_axis_mm, indexing="ij")
     expected = 0.06 * x - 0.04 * y if tilted else np.zeros_like(x)
     assert np.max(np.abs(scan.surface_on(state.x_axis_mm, state.y_axis_mm) - expected)) < 1e-8
     exported = export_surface(state)[:, 2].reshape(x.shape)
-    assert np.max(np.abs(exported - expected)) <= 0.1
+    assert np.max(np.abs(exported - expected)) <= SPACING_MM
     assert abs(state.initial_target_volume_mm3 - 2.56) <= 0.4
     observed = observe_task(scan, task, 0, None)
     sdf = SDFObserver().observe(observed.state)

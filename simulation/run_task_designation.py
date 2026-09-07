@@ -10,7 +10,7 @@ from matplotlib.patches import Ellipse, Rectangle
 from matplotlib.widgets import Button, RadioButtons, RectangleSelector, TextBox
 import numpy as np
 
-from scan_adapter import designate_task, observe_task
+from scan_adapter import SPACING_MM, designate_task, observe_task
 from scan_fixtures import nominal_designation
 from surface_scan import load_scan, save_scan
 from task_designation import TargetRegion, save_designation
@@ -32,30 +32,39 @@ class TaskEditor:
         self.regions = list(self.designation.regions)
         self.task = None
         self.approved = False
-        self.figure = plt.figure(figsize=(12, 7))
-        self.ax = self.figure.add_axes([0.06, 0.29, 0.39, 0.63])
-        self.volume_ax = self.figure.add_axes([0.50, 0.29, 0.46, 0.63], projection="3d")
+        self.figure = plt.figure(figsize=(15, 9))
+        self.ax = self.figure.add_axes([0.06, 0.27, 0.39, 0.66])
+        self.volume_ax = self.figure.add_axes([0.50, 0.27, 0.46, 0.66], projection="3d")
         points = scan.registered_points()
-        self.ax.scatter(points[:, 0], points[:, 1], c=points[:, 2], s=5, cmap="viridis")
-        self.ax.set(xlabel="Planning X [mm]", ylabel="Planning Y [mm]",
-                    title="Drag the active footprint; Add creates another")
+        self.ax.scatter(points[:, 0], points[:, 1], c="#4c1d95", s=16, alpha=0.9)
+        self.ax.set(xlabel="Planning X [mm]", ylabel="Planning Y [mm]")
+        self.ax.set_title("Drag the active footprint; Add creates another")
+        self.ax.xaxis.label.set_size(14)
+        self.ax.yaxis.label.set_size(14)
+        self.ax.title.set_size(16)
+        self.ax.tick_params(labelsize=12)
         self.ax.set_aspect("equal")
         self.patches = []
-        self.message = self.figure.text(0.06, 0.025, "", fontsize=9)
-        self.shape = RadioButtons(self.figure.add_axes([0.06, 0.075, 0.12, 0.12]),
+        self.message = self.figure.text(0.06, 0.025, "", fontsize=12)
+        self.shape = RadioButtons(self.figure.add_axes([0.06, 0.065, 0.14, 0.14]),
                                   ("rectangle", "ellipse"), active=int(self.regions[-1].shape == "ellipse"))
+        for label in self.shape.labels:
+            label.set_fontsize(12)
         region = self.regions[-1]
         right_depth = region.depth_mm if region.right_depth_mm is None else region.right_depth_mm
-        self.depth = DesignationTextBox(self.figure.add_axes([0.25, 0.12, 0.10, 0.05]), "", initial=str(region.depth_mm))
-        self.right = DesignationTextBox(self.figure.add_axes([0.39, 0.12, 0.10, 0.05]), "", initial=str(right_depth))
-        self.protection = DesignationTextBox(self.figure.add_axes([0.54, 0.12, 0.10, 0.05]), "", initial=str(designation.protected_floor_mm))
+        self.depth = DesignationTextBox(self.figure.add_axes([0.25, 0.10, 0.11, 0.06]), "", initial=str(region.depth_mm))
+        self.right = DesignationTextBox(self.figure.add_axes([0.40, 0.10, 0.11, 0.06]), "", initial=str(right_depth))
+        self.protection = DesignationTextBox(self.figure.add_axes([0.55, 0.10, 0.11, 0.06]), "", initial=str(designation.protected_floor_mm))
         for field, label in ((self.depth, "Left depth [mm]"), (self.right, "Right depth [mm]"),
                               (self.protection, "Protected Z [mm]")):
-            field.ax.set_title(label, fontsize=9, pad=6)
-        self.add = Button(self.figure.add_axes([0.70, 0.12, 0.11, 0.05]), "Add region")
-        self.approve = Button(self.figure.add_axes([0.83, 0.12, 0.11, 0.05]), "Approve / save")
+            field.ax.set_title(label, fontsize=12, pad=8)
+            field.text_disp.set_fontsize(13)
+        self.add = Button(self.figure.add_axes([0.71, 0.10, 0.12, 0.06]), "Add region")
+        self.approve = Button(self.figure.add_axes([0.85, 0.10, 0.12, 0.06]), "Approve / save")
+        self.add.label.set_fontsize(12)
+        self.approve.label.set_fontsize(12)
         self.selector = RectangleSelector(self.ax, self.select, useblit=True, button=[1],
-                                           minspanx=0.1, minspany=0.1, spancoords="data")
+                                           minspanx=SPACING_MM, minspany=SPACING_MM, spancoords="data")
         self.shape.on_clicked(self.edit_depth)
         for field in (self.depth, self.right, self.protection):
             field.on_submit(self.edit_depth)
@@ -96,10 +105,10 @@ class TaskEditor:
         self.patches = []
         for index, region in enumerate(self.regions):
             center, size = np.array(region.center_xy_mm), np.array(region.half_size_xy_mm)
-            color = "orange" if index == len(self.regions) - 1 else "limegreen"
-            patch = (Rectangle(center - size, *size * 2, fill=False, color=color)
+            color = "#f59e0b" if index == len(self.regions) - 1 else "#22c55e"
+            patch = (Rectangle(center - size, *size * 2, fill=False, color=color, linewidth=2.5)
                      if region.shape == "rectangle" else
-                     Ellipse(center, *size * 2, fill=False, color=color))
+                     Ellipse(center, *size * 2, fill=False, color=color, linewidth=2.5))
             self.ax.add_patch(patch)
             self.patches.append(patch)
         try:
@@ -111,19 +120,24 @@ class TaskEditor:
         else:
             state = self.task.state
             points = self.scan.registered_points()
-            self.volume_ax.scatter(*points[::4].T, s=1, c="gray", alpha=0.2)
-            for mask, color, label in ((state.target_mask, "orange", "Target"),
-                                       (state.constraint_mask, "red", "Protected")):
+            self.volume_ax.scatter(*points[::4].T, s=8, c="#64748b", alpha=0.32, label="Scan surface")
+            for mask, color, label in ((state.target_mask, "#f59e0b", "Target"),
+                                       (state.constraint_mask, "#ef4444", "Protected")):
                 indices = np.argwhere(mask)
                 indices = indices[::max(1, len(indices) // 2000)]
                 xyz = np.column_stack([axis[indices[:, i]] for i, axis in enumerate(
                     (state.x_axis_mm, state.y_axis_mm, state.z_axis_mm))])
-                self.volume_ax.scatter(*xyz.T, s=2, c=color, alpha=0.3, label=label)
-            self.volume_ax.legend(loc="upper right")
-            self.message.set_text(f"Target {state.initial_target_volume_mm3:.3f} mm³; spacing 0.1 mm. "
+                self.volume_ax.scatter(*xyz.T, s=12, c=color, alpha=0.72, label=label)
+            self.volume_ax.legend(loc="upper right", fontsize=12, markerscale=1.5)
+            self.message.set_text(f"Target {state.initial_target_volume_mm3:.3f} mm³; spacing {SPACING_MM:g} mm. "
                                   "Depths follow planning Z; unequal left/right depths create a stepped floor.")
         self.volume_ax.set(xlabel="X [mm]", ylabel="Y [mm]", zlabel="Z [mm]",
                            title="Registered scan + designated target/protection")
+        self.volume_ax.set_xlabel("X [mm]", fontsize=14, labelpad=10)
+        self.volume_ax.set_ylabel("Y [mm]", fontsize=14, labelpad=10)
+        self.volume_ax.set_zlabel("Z [mm]", fontsize=14, labelpad=10)
+        self.volume_ax.set_title("Registered scan + designated target/protection", fontsize=16, pad=16)
+        self.volume_ax.tick_params(labelsize=11)
         # Paint the approved geometry before Qt enters its blocking event loop.
         self.figure.canvas.draw()
 

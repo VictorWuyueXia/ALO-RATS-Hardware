@@ -3,6 +3,7 @@
 from dataclasses import asdict, dataclass, replace
 
 from scan_fixtures import nominal_designation, nominal_scan
+from scan_adapter import SPACING_MM
 from task_designation import TargetRegion, TaskDesignation
 
 
@@ -28,7 +29,7 @@ class SimulationCase:
                 "response_scale": {"pulse": self.disturbed_pulse, "factor": 0.8},
                 "scan": {"surface": "flat", "sample_spacing_xy_mm": [0.15, 0.20],
                          "lower_boundary_mm": self.scan().lower_boundary_mm},
-                "voxel_spacing_mm": 0.1, "completion_remaining_pct": 10.0,
+                "voxel_spacing_mm": SPACING_MM, "completion_remaining_pct": 10.0,
                 "maximum_overcut_pct": 10.0, "minimum_clearance_mm": 0.25}
 
 
@@ -66,5 +67,5 @@ def simulation_case(name):
     designation = replace(nominal_designation(), regions=regions, protected_floor_mm=protected)
     raster = {"candidate_grid_pitches_xy_mm": pitches, "candidate_grid_shape": shape,
               "candidate_grid_center_xy_mm": center, "candidate_depth_repetitions": 16,
-              "candidate_energies_j": (2.28, 2.3)}
+              "candidate_energies_j": (2.28, 2.30)}
     return SimulationCase(name, designation, raster, 5 if name == "response_disturbance" else None)

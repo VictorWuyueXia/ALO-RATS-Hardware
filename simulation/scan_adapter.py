@@ -16,7 +16,7 @@ def lattice_axes(bounds):
     for lower, upper in bounds:
         cells = (upper - lower) / SPACING_MM
         if not np.isclose(cells, round(cells), atol=1e-8, rtol=0):
-            raise ValueError("Volume bounds must contain an integer number of 0.1 mm cells")
+            raise ValueError(f"Volume bounds must contain an integer number of {SPACING_MM:g} mm cells")
         axes.append(lower + (np.arange(round(cells)) + 0.5) * SPACING_MM)
     return tuple(axes)
 
