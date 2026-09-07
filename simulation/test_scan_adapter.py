@@ -21,7 +21,9 @@ def test_analytic_scan_volume_and_sdf(tilted):
     scan = nominal_scan(tilted=tilted)
     task = designate_task(scan, nominal_designation())
     state = task.state
-    assert state.grid_shape == (28, 28, 18)
+    expected_shape = tuple(round((upper - lower) / SPACING_MM)
+                           for lower, upper in nominal_designation().grid_bounds_mm)
+    assert state.grid_shape == expected_shape
     x, y = np.meshgrid(state.x_axis_mm, state.y_axis_mm, indexing="ij")
     expected = 0.06 * x - 0.04 * y if tilted else np.zeros_like(x)
     assert np.max(np.abs(scan.surface_on(state.x_axis_mm, state.y_axis_mm) - expected)) < 1e-8

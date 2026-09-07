@@ -25,6 +25,8 @@ def test_method_matches_the_detected_jax_device_layout(
     method = load_method(ROOT / "mppi/configs/controller.yaml", devices)
     assert method.compute_profile == profile_name
     assert method.mppi.rollout_batch_size == rollout_batch_size
+    assert method.mppi.max_anchors == 10
+    assert method.mppi.samples_per_anchor == 128
 
 
 def test_method_rejects_an_unconfigured_jax_device_layout():
@@ -83,6 +85,11 @@ def test_diagnostic_does_not_replace_any_frozen_positive_case():
     assert len(CASE_NAMES) == 6 and "compact_diagnostic" not in CASE_NAMES
     assert "compact_diagnostic" in LAUNCH_CASE_NAMES
     case = simulation_case("compact_diagnostic")
+    assert case.manifest()["random_seed"] == 20260902
+    baseline = simulation_case("centered_rectangle")
+    assert baseline.designation.regions[0].half_size_xy_mm == (1.75, 1.75)
+    assert baseline.designation.regions[0].depth_mm == 2.0
+    assert baseline.raster_settings["candidate_energies_j"] == (4.0, 8.0)
     assert case.scan().lower_boundary_mm == case.designation.grid_bounds_mm[2][0] == -2.0
     with pytest.raises(ValueError):
         simulation_case("unrecognized_task")

@@ -13,7 +13,7 @@ from collision_scene import link_pose
 from robot_executor import OperatorAbort, RobotExecutor, require_coverage
 from robot_scene import HOME, ROOT
 from scan_adapter import designate_task
-from simulation_cases import nominal_scan, simulation_case
+from scan_fixtures import nominal_designation, nominal_scan
 from laser_ablation.control.interaction import ActionRequest
 from laser_ablation.control.method import load_method
 from laser_ablation.core.actions import PhysicalAction
@@ -24,12 +24,12 @@ from laser_ablation.planning.global_3d.terminal_verification import ExactPlanVer
 @pytest.fixture
 def apparatus():
     method = load_method(ROOT / "mppi/configs/controller.yaml", tuple(jax.devices()))
-    case = simulation_case("centered_rectangle")
-    state = designate_task(nominal_scan(), case.designation).state
+    designation = nominal_designation()
+    state = designate_task(nominal_scan(), designation).state
     verifier = ExactPlanVerifier(ExactVoxelSimulator(method.physics, method.bounds), 10, 0.25)
     client = p.connect(p.DIRECT)
     try:
-        robot = RobotExecutor(client, case.designation.grid_bounds_mm, verifier, lambda: None)
+        robot = RobotExecutor(client, designation.grid_bounds_mm, verifier, lambda: None)
         yield robot, state, verifier
     finally:
         p.disconnect(client)

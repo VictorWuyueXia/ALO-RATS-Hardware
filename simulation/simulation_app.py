@@ -28,8 +28,10 @@ def execute_case(case, scan, designation, output, *, gui, wait_for_start, isolat
     """Share exactly the same causal loop between DIRECT checks and live GUI execution."""
     output = Path(output).resolve()
     records = RunRecords(output)
-    # Use every device exposed by JAX and preserve the selected backend in the run record.
+    # Use one CUDA device for baseline parity while retaining the declared CPU test profile.
     devices = tuple(jax.devices())
+    if devices[0].platform in {"cuda", "gpu"}:
+        devices = devices[:1]
     method = load_method(ROOT / "mppi/configs/controller.yaml", devices)
     components = method.components(case.name, case.raster_settings, devices, RANDOM_SEED)
     write_json(output / "method.json", {

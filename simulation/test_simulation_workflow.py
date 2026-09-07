@@ -13,8 +13,9 @@ from robot_executor import OperatorAbort, RobotExecutor
 from robot_scene import ROOT
 from run_records import RunRecords, load_voxels
 from scan_adapter import designate_task, export_surface, observe_task
+from scan_fixtures import nominal_designation, nominal_scan
 from simulated_plant import SimulatedPlant
-from simulation_cases import simulation_case, nominal_scan
+from simulation_cases import simulation_case
 from workflow import run_workflow
 from workflow_display import WorkflowDisplay
 from laser_ablation.control.interaction import DesignatedTask
@@ -45,12 +46,13 @@ class RecordingPlanner:
 def workflow_case(tmp_path):
     method = load_method(ROOT / "mppi/configs/controller.yaml", tuple(jax.devices()))
     case = simulation_case("centered_rectangle")
+    designation = case.designation
     client = p.connect(p.DIRECT)
     try:
         display = WorkflowDisplay(client, tmp_path / "gui_frames")
         verifier = ExactPlanVerifier(ExactVoxelSimulator(method.physics, method.bounds), 10, 0.25)
-        robot = RobotExecutor(client, case.designation.grid_bounds_mm, verifier, display.poll)
-        task = designate_task(nominal_scan(), case.designation)
+        robot = RobotExecutor(client, designation.grid_bounds_mm, verifier, display.poll)
+        task = designate_task(case.scan(), designation)
         task = DesignatedTask(task.state, task.frame_id, robot.calibration.identity)
         display.bind(robot, task)
         plant = SimulatedPlant(task.state, method.physics, method.bounds, robot.calibration, task.frame_id, None)
@@ -135,11 +137,15 @@ def test_physical_response_disturbance_and_duplicate_pulse(workflow_case):
 
 
 def test_exact_model_surface_contract_failure_is_exposed(workflow_case):
-    _, task, _, robot, plant, _, _ = workflow_case
+    _, _, _, robot, plant, _, _ = workflow_case
+    nominal_task = designate_task(nominal_scan(), nominal_designation())
+    plant = SimulatedPlant(
+        nominal_task.state, plant._model.config, plant._model.bounds,
+        robot.calibration, nominal_task.frame_id, None)
     for index in range(3):
         plant.fire(str(index), PhysicalAction(-1.3 + 0.65 * index, -1, 0, 0, 2.28))
     with pytest.raises(ValueError, match="cavity or overhang"):
         export_surface(plant._state)
     pose = np.linalg.inv(robot.calibration.world_from_base_m) @ link_pose(robot.model, "ee_helper_link")
-    observed = observe_task(plant.observe(pose), task, 3, "2")
+    observed = observe_task(plant.observe(pose), nominal_task, 3, "2")
     assert np.array_equal(observed.state.tissue, plant._state.tissue)

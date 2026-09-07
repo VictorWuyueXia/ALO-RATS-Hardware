@@ -7,7 +7,7 @@ from scan_adapter import SPACING_MM
 from task_designation import TargetRegion, TaskDesignation
 
 
-RANDOM_SEED = 101
+RANDOM_SEED = 20260902
 CASE_NAMES = ("centered_rectangle", "offset_round", "stepped_floor",
               "separated_patches", "protected_boundary", "response_disturbance")
 LAUNCH_CASE_NAMES = (*CASE_NAMES, "compact_diagnostic")
@@ -47,8 +47,16 @@ def simulation_case(name):
         return SimulationCase(name, designation, raster, None)
     if name not in CASE_NAMES:
         raise ValueError(f"Unknown simulation case: {name}")
-    region = TargetRegion("rectangle", (0, 0), (1.6, 1.2), 1.0, None)
-    regions, center, pitches, shape, protected = (region,), (0, 0), ((0.65, 0.5), (0.675, 0.525)), (5, 5), -2.4
+    # Match the baseline square authority only for the comparable nominal task pair.
+    baseline_case = name in {"centered_rectangle", "response_disturbance"}
+    region = (
+        TargetRegion("rectangle", (0, 0), (1.75, 1.75), 2.0, None)
+        if baseline_case else TargetRegion("rectangle", (0, 0), (1.6, 1.2), 1.0, None)
+    )
+    regions, center, pitches, shape, protected = (
+        (region,), (0, 0), ((0.675, 0.675), (0.7, 0.7)), (5, 5), -5.9)
+    if not baseline_case:
+        pitches, protected = ((0.65, 0.5), (0.675, 0.525)), -2.4
     if name == "offset_round":
         center = (0.5, -0.3)
         regions = (TargetRegion("ellipse", center, (1.1, 1.1), 1.0, None),)
@@ -64,8 +72,12 @@ def simulation_case(name):
         center, protected = (0.1, 0), -1.5
         regions = (TargetRegion("rectangle", center, (1.2, 1.0), 1.0, None),)
         pitches = ((0.5, 0.4), (0.525, 0.425))
-    designation = replace(nominal_designation(), regions=regions, protected_floor_mm=protected)
+    nominal = nominal_designation()
+    grid_bounds = ((-2.25, 2.25), (-2.25, 2.25), (-6.0, 0.2)) if baseline_case else nominal.grid_bounds_mm
+    designation = replace(
+        nominal, regions=regions, grid_bounds_mm=grid_bounds,
+        protected_floor_mm=protected, plane_z_mm=0.0 if baseline_case else 0.5)
     raster = {"candidate_grid_pitches_xy_mm": pitches, "candidate_grid_shape": shape,
               "candidate_grid_center_xy_mm": center, "candidate_depth_repetitions": 16,
-              "candidate_energies_j": (2.28, 2.30)}
+              "candidate_energies_j": (4.0, 8.0) if baseline_case else (2.28, 2.30)}
     return SimulationCase(name, designation, raster, 5 if name == "response_disturbance" else None)

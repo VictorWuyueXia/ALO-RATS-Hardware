@@ -50,7 +50,7 @@ python -m pip install --upgrade "jax[cuda13]"
 python -c "import jax; print('backend:', jax.default_backend()); print('devices:', jax.devices())"
 ```
 
-The backend must print `gpu` and list every intended GPU before starting an experiment. The simulation automatically selects the matching `1gpu`, `4gpu`, or `8gpu` MPPI profile; an unconfigured GPU count fails explicitly. On a CPU-only JAX installation it selects the `cpu` profile. Native Windows JAX does not support NVIDIA CUDA, so PowerShell runs use the detected CPU backend; use the Ubuntu robot workstation or WSL2 for GPU execution. PyBullet may use the graphics GPU for OpenGL display, but its rigid-body and inverse-kinematics computations remain CPU-side.
+The backend must print `gpu` before starting an experiment. The simulation uses exactly the first CUDA device and the baseline `1gpu` MPPI profile; a CPU-only JAX installation uses the declared `cpu` test profile. Native Windows JAX does not support NVIDIA CUDA, so PowerShell runs use the CPU backend; use the Ubuntu robot workstation or WSL2 for baseline-profile execution. PyBullet may use the graphics GPU for OpenGL display, but its rigid-body and inverse-kinematics computations remain CPU-side.
 
 The repository snapshot passed 92 no-device tests on the development machine. The checks validate the processed-OCT contract, URDF asset closure, PyBullet interaction, controller/session interfaces, automatic compute-profile selection, and explicit simulation isolation. They do not validate an OCT scanner, a UR5e connection, laser focus, or tissue cutting.
 
@@ -83,7 +83,7 @@ python simulation/run_simulation.py \
   --case compact_diagnostic --output-dir "$demo_root/run"
 ```
 
-It runs one process: designation → unchanged MPPI → checked URDF motion → virtual pulse → synthetic volume observation → replanning. `method.json` records the selected compute profile, JAX backend, and device list. It is a simulation-only application: `simulation/simulation_isolation.py` rejects RTDE, OCT, laser modules, and all non-local socket connections. The compact diagnostic is not an acceptance-quality treatment result; inspect its `acceptance.json`.
+It runs one process: designation → baseline MPPI authority (10 anchors, 128 samples per anchor, and seed `20260902`) → checked URDF motion → virtual pulse → synthetic volume observation → replanning. The comparable centered-rectangle and response-disturbance cases use the baseline 4/8-J raster seeds; geometrically distinct cases retain their exact-validated seed energies. `method.json` records the selected compute profile, JAX backend, and device list. It is a simulation-only application: `simulation/simulation_isolation.py` rejects RTDE, OCT, laser modules, and all non-local socket connections. The compact diagnostic is not an acceptance-quality treatment result; inspect its `acceptance.json`.
 
 For a lightweight robot-interaction preview that does not run MPPI, use:
 
