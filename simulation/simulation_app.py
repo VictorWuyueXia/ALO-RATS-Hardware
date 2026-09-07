@@ -3,12 +3,11 @@
 from hashlib import sha256
 from pathlib import Path
 
-import jax
 import numpy as np
 import pybullet as p
 
 from laser_ablation.control.interaction import DesignatedTask
-from laser_ablation.control.method import load_method
+from laser_ablation.control.method import activate_compute_profile, load_method
 from laser_ablation.physics.exact_voxel import ExactVoxelSimulator
 from laser_ablation.planning.global_3d.terminal_verification import ExactPlanVerifier
 from collision_scene import link_pose
@@ -28,11 +27,10 @@ def execute_case(case, scan, designation, output, *, gui, wait_for_start, isolat
     """Share exactly the same causal loop between DIRECT checks and live GUI execution."""
     output = Path(output).resolve()
     records = RunRecords(output)
-    # Use one CUDA device for baseline parity while retaining the declared CPU test profile.
-    devices = tuple(jax.devices())
-    if devices[0].platform in {"cuda", "gpu"}:
-        devices = devices[:1]
-    method = load_method(ROOT / "mppi/configs/controller.yaml", devices)
+    controller_path = ROOT / "mppi/configs/controller.yaml"
+    devices = activate_compute_profile(controller_path)
+    import jax
+    method = load_method(controller_path, devices)
     components = method.components(case.name, case.raster_settings, devices, RANDOM_SEED)
     write_json(output / "method.json", {
         "inputs": method.source_values, "source_sha256": method.source_hashes,

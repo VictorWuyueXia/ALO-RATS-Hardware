@@ -6,6 +6,7 @@ from pathlib import Path
 
 from laser_ablation.config import bounds_from_mapping, load_yaml, physics_from_mapping
 from laser_ablation.control.factory import build_planning_components
+from laser_ablation.control.workflow_config import ComputeProfile
 from laser_ablation.planning.jax_bank.repair import MPPIRepairConfig
 
 
@@ -32,6 +33,20 @@ class ResolvedMethod:
             hard_margin_mm=self.hard_margin_mm, raster_name=case_name,
             raster_settings=raster_settings, global_settings=self.global_settings,
         )
+
+
+def activate_compute_profile(controller_path: Path) -> tuple[object, ...]:
+    """Activate the controller's default compute profile before importing JAX."""
+    path = Path(controller_path).resolve()
+    root = path.parent.parent
+    controller = load_yaml(path)
+    compute_values = load_yaml(root / controller["compute_config"])
+    profile_name = compute_values["default_profile"]
+    profile = compute_values["profiles"][profile_name]
+    return ComputeProfile(
+        profile_name, profile["platform"], tuple(profile["device_indices"]),
+        int(profile["rollout_batch_size"]), profile["preallocate"],
+    ).activate()
 
 
 def load_method(controller_path: Path, devices) -> ResolvedMethod:

@@ -13,7 +13,7 @@ maximum_pulses: 400
 maximum_repairs_per_prefix: 1
 mppi:
   max_anchors: 10
-  samples_per_anchor: 128
+  samples_per_anchor: 32
   iterations: 1
   beta: 0.70
   kappa: [0.00375, 0.00375, 0.00075, 0.00075, 0.015]

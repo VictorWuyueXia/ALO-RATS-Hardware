@@ -16,7 +16,7 @@ from simulation_cases import CASE_NAMES, LAUNCH_CASE_NAMES, SIMULATION_CONFIG_PA
 
 
 @pytest.mark.parametrize(("platform", "count", "profile_name", "rollout_batch_size"), [
-    ("cpu", 1, "cpu", 4), ("gpu", 1, "1gpu", 8),
+    ("cpu", 1, "cpu", 1), ("gpu", 1, "1gpu", 1),
     ("cuda", 4, "4gpu", 32), ("gpu", 8, "8gpu", 64),
 ])
 def test_method_matches_the_detected_jax_device_layout(
@@ -26,13 +26,35 @@ def test_method_matches_the_detected_jax_device_layout(
     assert method.compute_profile == profile_name
     assert method.mppi.rollout_batch_size == rollout_batch_size
     assert method.mppi.max_anchors == 10
-    assert method.mppi.samples_per_anchor == 128
+    assert method.mppi.samples_per_anchor == 32
 
 
 def test_method_rejects_an_unconfigured_jax_device_layout():
     devices = tuple(SimpleNamespace(platform="gpu") for _ in range(2))
     with pytest.raises(ValueError, match="No unique compute profile"):
         load_method(ROOT / "mppi/configs/controller.yaml", devices)
+
+
+def test_simulation_compute_profile_activates_before_jax_import():
+    code = """
+from pathlib import Path
+from types import SimpleNamespace
+from unittest.mock import Mock
+import sys
+from laser_ablation.control import method
+assert "jax" not in sys.modules
+profile = Mock()
+profile.activate.return_value = (SimpleNamespace(platform="gpu"),)
+constructor = Mock(return_value=profile)
+method.ComputeProfile = constructor
+devices = method.activate_compute_profile(Path.cwd().parent / "mppi/configs/controller.yaml")
+assert devices[0].platform == "gpu"
+assert constructor.call_args.args[0] == "1gpu"
+assert constructor.call_args.args[4] is False
+"""
+    result = subprocess.run([sys.executable, "-c", code], cwd=Path(__file__).parent,
+                            capture_output=True, text=True, timeout=30)
+    assert result.returncode == 0, result.stdout + result.stderr
 
 
 def test_simulation_guard_rejects_physical_imports_and_connections():

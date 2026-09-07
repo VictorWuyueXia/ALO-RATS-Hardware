@@ -34,7 +34,7 @@ cases:
       candidate_grid_shape: [5, 5]
       candidate_grid_center_xy_mm: [0.0, 0.0]
       candidate_depth_repetitions: 16
-      candidate_energies_j: [3.0, 6.0]
+      candidate_energies_j: [4.0, 8.0]
   offset_round:
     disturbed_pulse: null
     designation:
