@@ -35,13 +35,17 @@ class ResolvedMethod:
         )
 
 
-def activate_compute_profile(controller_path: Path) -> tuple[object, ...]:
-    """Activate the controller's default compute profile before importing JAX."""
+def activate_compute_profile(
+    controller_path: Path, compute_override: str | None = None
+) -> tuple[object, ...]:
+    """Activate the requested compute profile or the configured default before importing JAX."""
     path = Path(controller_path).resolve()
     root = path.parent.parent
     controller = load_yaml(path)
     compute_values = load_yaml(root / controller["compute_config"])
-    profile_name = compute_values["default_profile"]
+    profile_name = compute_override or compute_values["default_profile"]
+    if profile_name not in compute_values["profiles"]:
+        raise ValueError(f"Unknown compute profile: {profile_name}")
     profile = compute_values["profiles"][profile_name]
     return ComputeProfile(
         profile_name, profile["platform"], tuple(profile["device_indices"]),

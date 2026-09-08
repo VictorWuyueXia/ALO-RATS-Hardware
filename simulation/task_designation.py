@@ -43,7 +43,7 @@ class TargetRegion:
 class TaskDesignation:
     regions: tuple[TargetRegion, ...]
     grid_bounds_mm: tuple[tuple[float, float], ...]
-    protected_floor_mm: float
+    constraint_depth_mm: float
     plane_z_mm: float
     frame_id: str
     authority_id: str
@@ -54,10 +54,10 @@ class TaskDesignation:
             raise ValueError("Task requires finite increasing XYZ volume bounds")
         if not self.regions or not self.frame_id or not self.authority_id:
             raise ValueError("Task requires designated regions, frame, and action authority")
-        if not np.isfinite([self.protected_floor_mm, self.plane_z_mm]).all():
-            raise ValueError("Target reference and protected floor must be finite")
-        if not bounds[2, 0] < self.protected_floor_mm < bounds[2, 1]:
-            raise ValueError("Protected floor must lie inside the modeled volume")
+        if not np.isfinite([self.constraint_depth_mm, self.plane_z_mm]).all():
+            raise ValueError("Target reference and constraint depth must be finite")
+        if self.constraint_depth_mm <= 0:
+            raise ValueError("Constraint depth must be positive")
         for region in self.regions:
             center, size = np.array(region.center_xy_mm), np.array(region.half_size_xy_mm)
             if np.any(center - size < bounds[:2, 0]) or np.any(center + size > bounds[:2, 1]):

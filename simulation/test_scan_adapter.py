@@ -38,6 +38,24 @@ def test_analytic_scan_volume_and_sdf(tilted):
     assert not observed.state.target_mask.flags.writeable
 
 
+def test_default_constraint_plane_tracks_the_initial_surface_one_mm_below_target():
+    """The default 3 mm constraint plane leaves a 1 mm interval below the 2 mm target floor."""
+    from simulation_cases import simulation_case
+
+    case = simulation_case("centered_rectangle")
+    state = designate_task(case.scan(), case.designation).state
+    assert case.designation.grid_bounds_mm == ((-3.0, 3.0), (-3.0, 3.0), (-3.0, 0.0))
+    assert case.designation.regions[0].half_size_xy_mm == (2.0, 2.0)
+    assert case.designation.regions[0].depth_mm == 2.0
+    assert case.designation.constraint_depth_mm == 3.0
+    assert state.target_mask[:, :, :10].sum() == 0
+    assert state.constraint_mask[:, :, 0].all()
+    assert not state.constraint_mask[:, :, 1:].any()
+    target_floor_mm = state.z_axis_mm[10] - SPACING_MM / 2
+    constraint_surface_mm = state.z_axis_mm[0] - SPACING_MM / 2
+    assert np.isclose(target_floor_mm - constraint_surface_mm, 1.0)
+
+
 def test_exact_surface_export_reconstruction_and_immutable_masks():
     scan = nominal_scan()
     task = designate_task(scan, nominal_designation())
@@ -170,7 +188,7 @@ def test_reject_missing_coverage_target_overlap_and_hidden_residual():
     with pytest.raises(ValueError, match="coverage"):
         designate_task(short, designation)
     with pytest.raises(ValueError, match="disjoint"):
-        designate_task(scan, replace(designation, protected_floor_mm=-0.5))
+        designate_task(scan, replace(designation, constraint_depth_mm=0.5))
     state = designate_task(scan, designation).state.copy()
     state.tissue[10, 10, 5] = False
     with pytest.raises(ValueError, match="cavity"):
@@ -226,8 +244,8 @@ def test_geometry_text_changes_redraw_3d_voxels(tmp_path):
     try:
         prior_protected_voxels = int(editor.task.state.constraint_mask.sum())
         editor.figure.canvas.draw = Mock(wraps=editor.figure.canvas.draw)
-        editor.protection.text_disp.set_text("-1.5")
-        editor.protection._observers.process("change", "-1.5")
+        editor.protection.text_disp.set_text("1.5")
+        editor.protection._observers.process("change", "1.5")
         assert int(editor.task.state.constraint_mask.sum()) > prior_protected_voxels
         assert editor.figure.canvas.draw.called
     finally:

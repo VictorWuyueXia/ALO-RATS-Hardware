@@ -59,7 +59,7 @@ def simulation_case(name):
     )
     designation = TaskDesignation(
         regions, tuple(tuple(pair) for pair in geometry["grid_bounds_mm"]),
-        float(geometry["protected_floor_mm"]), float(geometry["plane_z_mm"]),
+        float(geometry["constraint_depth_mm"]), float(geometry["plane_z_mm"]),
         str(geometry["frame_id"]), str(geometry["authority_id"]),
     )
     raster_values = values["raster_settings"]

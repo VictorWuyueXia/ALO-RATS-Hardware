@@ -27,7 +27,7 @@ def default_designation(scan):
     size = tuple((axis[-1] - axis[0]) / 6 for axis in axes[:2])
     depth = min(0.8, float(surface.max() - bounds[2][0] - 0.1))
     return TaskDesignation((TargetRegion("rectangle", center, size, depth, None),), bounds,
-                           bounds[2][0] + 0.5, bounds[2][1], scan.frame_id,
+                           0.5, bounds[2][1], scan.frame_id,
                            "processed_oct_registration_pending_hardware_calibration")
 
 
@@ -57,9 +57,9 @@ class VolumeTaskEditor:
                                   ("rectangle", "ellipse"), active=int(region.shape == "ellipse"))
         self.depth = DesignationTextBox(self.figure.add_axes([0.25, 0.12, 0.10, 0.05]), "", initial=str(region.depth_mm))
         self.right = DesignationTextBox(self.figure.add_axes([0.39, 0.12, 0.10, 0.05]), "", initial=str(region.depth_mm))
-        self.protection = DesignationTextBox(self.figure.add_axes([0.54, 0.12, 0.10, 0.05]), "", initial=str(designation.protected_floor_mm))
+        self.protection = DesignationTextBox(self.figure.add_axes([0.54, 0.12, 0.10, 0.05]), "", initial=str(designation.constraint_depth_mm))
         for field, label in ((self.depth, "Left depth [mm]"), (self.right, "Right depth [mm]"),
-                             (self.protection, "Protected Z [mm]")):
+                             (self.protection, "Constraint depth [mm]")):
             field.ax.set_title(label, fontsize=9, pad=6)
             field.on_submit(self.edit)
         self.add = Button(self.figure.add_axes([0.70, 0.12, 0.11, 0.05]), "Add region")
@@ -106,7 +106,7 @@ class VolumeTaskEditor:
             self.patches.append(patch)
         try:
             self.designation = replace(self.designation, regions=tuple(self.regions),
-                                       protected_floor_mm=float(self.protection.text))
+                                       constraint_depth_mm=float(self.protection.text))
             self.task = designate_task(self.scan, self.designation)
         except ValueError as error:
             self.message.set_text(f"INVALID TASK — cannot approve: {error}")
