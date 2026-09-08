@@ -6,11 +6,7 @@ from dataclasses import dataclass, replace
 
 import numpy as np
 
-from laser_ablation.planning.jax_bank.contracts import (
-    PaddedActionBatch,
-    QuickRolloutBatch,
-    StaticTaskTensors,
-)
+from laser_ablation.planning.jax_bank.contracts import QuickRolloutBatch, StaticTaskTensors
 from laser_ablation.planning.jax_bank.linear_contracts import DeviceLinearizationWorkspace, LinearizationLibrary
 from laser_ablation.planning.jax_bank.mppi_cost import (
     path_integral_weights,
@@ -22,7 +18,7 @@ from laser_ablation.planning.jax_bank.repair import (
     FeasibleRepairTrajectory,
     MPPIRepairConfig,
 )
-from laser_ablation.planning.jax_bank.rollout import rollout_in_batches
+from laser_ablation.planning.jax_bank.terminal_rollout import rollout_terminal_in_batches
 from laser_ablation.planning.jax_bank.segment_beam import (
     SegmentBeam,
     stream_linearized_segment as _stream_linearized_segment,
@@ -359,7 +355,7 @@ class MPPIExecutor:
         )
         return np.asarray(sampled), np.asarray(perturbations)
 
-    def rollout(
+    def screen(
         self,
         samples: np.ndarray,
         mask: np.ndarray,
@@ -368,19 +364,13 @@ class MPPIExecutor:
         task: StaticTaskTensors,
         iteration: int,
     ):
-        """Flatten anchor/sample axes for the existing scan-and-vmap executor."""
+        """Terminal-screen flattened sampled rows without retaining SDF traces."""
         anchors, sample_count, pulse_count, _ = samples.shape
         flat_mask = np.broadcast_to(mask[:, None], (anchors, sample_count, pulse_count))
-        source_ids = tuple(
-            f"mppi:{tail_ids[index]}:{iteration}:{sample}"
-            for index in active_indices for sample in range(sample_count)
-        )
-        return rollout_in_batches(
-            task,
-            PaddedActionBatch(
-                samples.reshape(-1, pulse_count, 5), flat_mask.reshape(-1, pulse_count), source_ids
-            ),
-            self.config.rollout_batch_size,
+        del tail_ids, active_indices, iteration
+        return rollout_terminal_in_batches(
+            task, task.initial_current_sdf, samples.reshape(-1, pulse_count, 5),
+            flat_mask.reshape(-1, pulse_count), self.config.rollout_batch_size,
             self.devices,
         )
 
@@ -396,8 +386,8 @@ class MPPIExecutor:
         import jax.numpy as jnp
 
         anchors, samples_per_anchor = samples.shape[:2]
-        remaining = rollout.remaining_fraction[:, -1].reshape(anchors, samples_per_anchor)
-        overcut = rollout.healthy_overcut_fraction[:, -1].reshape(anchors, samples_per_anchor)
+        remaining = rollout.remaining_fraction.reshape(anchors, samples_per_anchor)
+        overcut = rollout.healthy_overcut_fraction.reshape(anchors, samples_per_anchor)
         costs, components = self.cost_compiled(
             jnp.asarray(samples), jnp.asarray(origin), jnp.asarray(mask),
             jnp.asarray(remaining), jnp.asarray(overcut),

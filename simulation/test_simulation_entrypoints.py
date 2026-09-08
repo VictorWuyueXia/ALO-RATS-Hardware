@@ -16,8 +16,8 @@ from simulation_cases import CASE_NAMES, LAUNCH_CASE_NAMES, SIMULATION_CONFIG_PA
 
 
 @pytest.mark.parametrize(("platform", "count", "profile_name", "rollout_batch_size"), [
-    ("cpu", 1, "cpu", 1), ("gpu", 1, "1gpu", 1),
-    ("cuda", 4, "4gpu", 32), ("gpu", 8, "8gpu", 64),
+    ("cpu", 1, "cpu", 4), ("gpu", 1, "1gpu", 4),
+    ("cuda", 4, "4gpu", 64), ("gpu", 8, "8gpu", 64),
 ])
 def test_method_matches_the_detected_jax_device_layout(
         platform, count, profile_name, rollout_batch_size):
@@ -26,7 +26,7 @@ def test_method_matches_the_detected_jax_device_layout(
     assert method.compute_profile == profile_name
     assert method.mppi.rollout_batch_size == rollout_batch_size
     assert method.mppi.max_anchors == 10
-    assert method.mppi.samples_per_anchor == 32
+    assert method.mppi.samples_per_anchor == 512
 
 
 def test_method_rejects_an_unconfigured_jax_device_layout():

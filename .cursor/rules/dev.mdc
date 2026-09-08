@@ -1,0 +1,9 @@
+---
+alwaysApply: true
+---
+
+
+# dev rules
+- Always treat it as expensive when adding code or adding objectes. Always prefer removing code than adding when modifying. Alwasy realize the code base with shortest total code count for each file, this means avoid over-abstraction or over-generalization logics, and seperate the code chunks or methods by tasks instead of by roles. For example, a good script my contain 1-3 methods, each corresponding to a running mode or task or goal, do not seperat them to many small methods of small operation steps.
+
+- When training models or making controllers with tunable parameters, proactively train or test out the agent in several iterations. Between iterations, scan through the artifacts and identify any potential improvements that could be achieced by tuning the parameters before the next iteration. Do so until you believe tuning parameters alone cannot significantly improve anymore, and if the agent still fails at this stage, infer a reasong why and suggest a next step fix.

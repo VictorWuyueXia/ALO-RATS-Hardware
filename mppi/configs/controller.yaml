@@ -1,11 +1,11 @@
-experiment: square_branch128_repair10_sequential_pi1_fixed10_roi090
+experiment: square_branch512_repair10_sequential_pi1_fixed10_roi090
 status: SHOW_OF_CONCEPT
 compute_config: configs/compute.yaml
 scenario_config: configs/scenarios.yaml
 shared_configs:
   physics: configs/physics.yaml
   planner: configs/planner.yaml
-  frozen_global: configs/experiments/icra27_global_frozen_v1.yaml
+  geometry_aware_global: configs/experiments/icra27_global_frozen_v1.yaml
   energy_mpc: configs/experiments/energy_mpc_casadi_v1.yaml
 alignment_persistence: 3
 periodic_repair_pulses: 10
@@ -13,10 +13,10 @@ maximum_pulses: 400
 maximum_repairs_per_prefix: 1
 mppi:
   max_anchors: 10
-  samples_per_anchor: 32
+  samples_per_anchor: 512
   iterations: 1
   beta: 0.70
-  kappa: [0.00375, 0.00375, 0.00075, 0.00075, 0.015]
+  kappa: [0.0075, 0.0075, 0.00225, 0.00225, 0.0225]
   lambda_remaining: 0.60
   lambda_overcut: 0.40
   lambda_anchor: 0.0

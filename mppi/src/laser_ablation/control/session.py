@@ -17,13 +17,13 @@ from laser_ablation.metrics import evaluate_ablation
 class ControllerSession:
     """Retain plan state while an external workflow owns the plant and scan source."""
 
-    def __init__(self, planner, observer, raster_generator, frozen_generator,
+    def __init__(self, planner, observer, raster_generator,
                  completion_remaining_pct, periodic_repair_pulses, maximum_pulses,
                  output_directory, random_seed):
         if completion_remaining_pct < 0 or min(periodic_repair_pulses, maximum_pulses) <= 0:
             raise ValueError("Invalid controller completion or pulse limits")
         self.planner, self.observer = planner, observer
-        self.raster_generator, self.frozen_generator = raster_generator, frozen_generator
+        self.raster_generator = raster_generator
         self.completion_remaining_pct = float(completion_remaining_pct)
         self.periodic_repair_pulses = int(periodic_repair_pulses)
         self.maximum_pulses = int(maximum_pulses)

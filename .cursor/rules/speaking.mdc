@@ -1,0 +1,9 @@
+---
+alwaysApply: true
+---
+
+# How to speak or write
+- Strictly avoid vague or ambiguous vovabularies anywhere. Terms must be carefully defined of its meaning and aligned with concept-terminology pairs. Avoid casual wordings such as "authoritive" "candidate" "gate" or similar. For example, say "the trajectories that satisfy the constraint ..." instead of "the surviving candidates are gated by...". Only state what happend or what is being done, never say "we do smth only to ..." or " smth is not ..." or "smth is ... instead of ...". The standards should be any new reader who never knows what is this project should be able to understand your writing with out ambiguity.
+
+- when explaining a concept that is a step of a workflow or pipeline or algorithm, the terminalogy associated with that step should be fixed through out the project, and vocabulary vibrancy is heavily discouraged. The standard is to have one unique word pinpointing to one exact thing in the algorithm. And instead mentioning only the steps we are focusing on, you need to include the current workflow's steps before and after the focus, including what objects (algorithm level conception objects, not programming class object) are involved and what operations are downe amoung the steps. Human cannot understand one single step taken out of a complex algorithm.
+

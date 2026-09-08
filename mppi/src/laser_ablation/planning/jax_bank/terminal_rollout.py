@@ -8,7 +8,9 @@ from dataclasses import dataclass
 import numpy as np
 
 from laser_ablation.planning.jax_bank.contracts import StaticTaskTensors
-from laser_ablation.planning.jax_bank.jax_transition import FLAG_NAMES, build_transition
+from laser_ablation.planning.jax_bank.jax_transition import (
+    FLAG_NAMES, ROLLOUT_DIAGNOSTIC_FLAG_NAMES, build_transition,
+)
 
 
 @dataclass(frozen=True)
@@ -40,7 +42,7 @@ def _build_terminal_executor(
     import jax
     import jax.numpy as jnp
 
-    transition = build_transition(task)
+    transition = build_transition(task, freeze_contact_state=False)
     target = jnp.asarray(task.target_mask)
     initial_tissue = jnp.asarray(task.initial_tissue)
     target_denominator = jnp.float32(task.initial_target_voxels)
@@ -54,7 +56,7 @@ def _build_terminal_executor(
         def advance(
             carry: tuple[object, ...], inputs: tuple[object, object],
         ) -> tuple[tuple[object, ...], object]:
-            current, clearance, pulse_count, energy, completed, remaining, overcut = carry
+            current, clearance, pulse_count, energy, completed, remaining, overcut, flags_so_far = carry
             action, requested = inputs
             active = requested & ~completed
             next_state, flags, step_clearance, next_remaining, next_overcut = transition(
@@ -69,19 +71,21 @@ def _build_terminal_executor(
                 next_completed,
                 next_remaining,
                 next_overcut,
-            ), flags
+                jnp.logical_or(flags_so_far, flags),
+            ), None
 
-        final, flags = jax.lax.scan(
+        final, _ = jax.lax.scan(
             advance,
             (
                 initial, jnp.float32(jnp.inf), jnp.int32(0), jnp.float32(0.0),
                 initial_completed, initial_remaining / target_denominator,
                 initial_overcut / target_denominator,
+                jnp.zeros(len(FLAG_NAMES), dtype=bool),
             ),
             (actions, action_mask),
             length=steps,
         )
-        current, clearance, pulse_count, energy, _, remaining, overcut = final
+        current, clearance, pulse_count, energy, _, remaining, overcut, flags = final
         healthy_overcut = jnp.where(
             healthy_denominator > 0.0,
             jnp.count_nonzero(initial_tissue & (current > 0.0) & ~target) / healthy_denominator,
@@ -113,6 +117,7 @@ def rollout_terminal_in_batches(
     action_mask: np.ndarray,
     batch_size: int,
     devices: tuple[object, ...],
+    initial_rows: np.ndarray | None = None,
 ) -> TerminalRolloutBatch:
     """Roll exact per-row initial states through fixed-width actions without state traces."""
     import jax.numpy as jnp
@@ -124,8 +129,16 @@ def rollout_terminal_in_batches(
         raise ValueError("terminal batch size must be positive and divisible by the device count")
     if action_values.ndim != 3 or action_values.shape[-1] != 5:
         raise ValueError("terminal actions must have shape (row, step, 5)")
-    if mask.shape != action_values.shape[:2] or initial.shape != (len(action_values),) + task.shape:
-        raise ValueError("terminal states, actions, and masks must share their row dimension")
+    row_mapping = None if initial_rows is None else np.asarray(initial_rows, np.int32)
+    if mask.shape != action_values.shape[:2]:
+        raise ValueError("terminal actions and masks must share their row dimension")
+    if row_mapping is None:
+        if initial.shape not in {task.shape, (len(action_values),) + task.shape}:
+            raise ValueError("terminal states must be shared or align with every action row")
+    elif (row_mapping.shape != (len(action_values),) or initial.ndim != 4
+          or initial.shape[1:] != task.shape or np.any(row_mapping < 0)
+          or np.any(row_mapping >= len(initial))):
+        raise ValueError("terminal state rows must map every action row to one initial SDF")
     if len(action_values) <= 0 or not np.all(np.isfinite(initial)) or not np.all(np.isfinite(action_values)):
         raise ValueError("terminal rollout requires finite nonempty input arrays")
     steps = int(action_values.shape[1])
@@ -136,23 +149,33 @@ def rollout_terminal_in_batches(
         _EXECUTORS[key] = executor
 
     parts: list[tuple[np.ndarray, ...]] = []
-    for start in range(0, len(action_values), batch_size):
+    shard_count = (len(action_values) + batch_size - 1) // batch_size
+    for shard_index, start in enumerate(range(0, len(action_values), batch_size), start=1):
         stop = min(start + batch_size, len(action_values))
         count = stop - start
         packed_initial = np.broadcast_to(task.initial_current_sdf, (batch_size,) + task.shape).copy()
         packed_actions = np.zeros((batch_size, steps, 5), np.float32)
         packed_mask = np.zeros((batch_size, steps), bool)
-        packed_initial[:count] = initial[start:stop]
+        if row_mapping is None and initial.shape == task.shape:
+            packed_initial[:count] = initial
+        elif row_mapping is None:
+            packed_initial[:count] = initial[start:stop]
+        else:
+            packed_initial[:count] = initial[row_mapping[start:stop]]
         packed_actions[:count] = action_values[start:stop]
         packed_mask[:count] = mask[start:stop]
         values = executor(
             jnp.asarray(packed_initial), jnp.asarray(packed_actions), jnp.asarray(packed_mask),
         )
         parts.append(tuple(np.asarray(value[:count]) for value in values))
+        del values
+        print(f"rollout kind=terminal shard={shard_index}/{shard_count} rows=[{start},{stop})", flush=True)
 
     combined = tuple(np.concatenate([part[index] for part in parts]) for index in range(8))
     states, remaining, overcut, healthy, clearance, pulses, energy, flag_values = combined
-    feasible = ~np.any(flag_values, axis=(1, 2))
+    hard_indices = tuple(index for index, name in enumerate(FLAG_NAMES)
+                         if name not in ROLLOUT_DIAGNOSTIC_FLAG_NAMES)
+    feasible = ~np.any(flag_values[..., hard_indices], axis=1)
     accepted = feasible.copy()
     return TerminalRolloutBatch(
         states, remaining, overcut, healthy, clearance, pulses, energy,

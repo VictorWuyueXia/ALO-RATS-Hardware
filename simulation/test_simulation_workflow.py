@@ -34,13 +34,13 @@ class RecordingPlanner:
     def __init__(self, action):
         self.action, self.repair_requests = action, []
 
-    def propose(self, state, observed, raster, frozen, directory):
+    def propose(self, state, observed, raster, directory):
         return SimpleNamespace(trajectory_id="controlled_test_plan", parent_trajectory_id=None,
                                actions=(self.action,) * 40)
 
     def repair(self, state, observed, request):
         self.repair_requests.append((request, state.tissue.copy()))
-        return self.propose(state, observed, None, None, None)
+        return self.propose(state, observed, None, None)
 
 
 @pytest.fixture
@@ -62,7 +62,7 @@ def workflow_case(tmp_path):
         observed = observe_task(initial_scan, task, 0, None)
         records = RunRecords(tmp_path)
         planner = RecordingPlanner(PhysicalAction(0, 0, 0, 0, 2.0))
-        session = ControllerSession(planner, SDFObserver(), object(), object(), 10, 10, 11, tmp_path, 101)
+        session = ControllerSession(planner, SDFObserver(), object(), 10, 10, 11, tmp_path, 101)
         yield session, task, observed, robot, plant, records, display
     finally:
         p.disconnect(client)

@@ -75,7 +75,7 @@ class UnifiedWorkflowConfig:
     scenario: Mapping[str, Any]
     physics_path: Path
     planner_path: Path
-    frozen_global_path: Path
+    geometry_aware_global_path: Path
     energy_mpc_path: Path
     alignment_persistence: int
     periodic_repair_pulses: int
@@ -119,13 +119,13 @@ def load_unified_workflow_config(
     shared = _mapping(values, "shared_configs")
     physics_path = (root / _string(shared, "physics")).resolve()
     planner_path = (root / _string(shared, "planner")).resolve()
-    frozen_global_path = (root / _string(shared, "frozen_global")).resolve()
-    frozen_shared = _mapping(load_yaml(frozen_global_path), "shared_configs")
-    frozen_physics_path = (root / _string(frozen_shared, "physics")).resolve()
-    frozen_planner_path = (root / _string(frozen_shared, "planner")).resolve()
-    if frozen_physics_path != physics_path or frozen_planner_path != planner_path:
+    geometry_aware_global_path = (root / _string(shared, "geometry_aware_global")).resolve()
+    geometry_shared = _mapping(load_yaml(geometry_aware_global_path), "shared_configs")
+    geometry_physics_path = (root / _string(geometry_shared, "physics")).resolve()
+    geometry_planner_path = (root / _string(geometry_shared, "planner")).resolve()
+    if geometry_physics_path != physics_path or geometry_planner_path != planner_path:
         raise ValueError(
-            "Frozen Global physics and planner paths must match the active exact authority"
+            "geometry-aware global physics and planner paths must match the active exact authority"
         )
     mppi = dict(_mapping(values, "mppi"))
     mppi["kappa"] = tuple(float(value) for value in mppi["kappa"])
@@ -143,7 +143,7 @@ def load_unified_workflow_config(
         scenario=scenario,
         physics_path=physics_path,
         planner_path=planner_path,
-        frozen_global_path=frozen_global_path,
+        geometry_aware_global_path=geometry_aware_global_path,
         energy_mpc_path=root / _string(shared, "energy_mpc"),
         alignment_persistence=int(values["alignment_persistence"]),
         periodic_repair_pulses=int(values["periodic_repair_pulses"]),

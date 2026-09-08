@@ -19,7 +19,7 @@ def propose(session, index):
     try:
         plan = session.planner.propose(
             session.state, session.observed, session.raster_generator,
-            session.frozen_generator, session.banks_directory / f"global_{index:03d}",
+            session.banks_directory / f"global_{index:03d}",
         )
     except GlobalPlanningFailure:
         session.stopped_reason = "GLOBAL_PLANNING_FAILED"

@@ -6,18 +6,18 @@ from typing import Any, Mapping
 
 from laser_ablation.core.actions import PhysicalAction
 from laser_ablation.core.state import VoxelState
-from laser_ablation.metrics import evaluate_ablation
-from laser_ablation.planning.global_3d.interface import GlobalPlanningFailure, PlanCandidate
-from laser_ablation.planning.global_3d.terminal_verification import ExactPlanVerifier
+from laser_ablation.physics.exact_voxel import ExactVoxelSimulator
+from laser_ablation.planning.global_3d.interface import PlanCandidate
 
 
 class ConfiguredRasterPlanGenerator:
-    """Build and independently exact-verify a configured raster plan bank."""
+    """Build four configured raw raster action sequences without feasibility screening."""
 
     def __init__(
-        self, scenario_name: str, scenario: Mapping[str, Any], verifier: ExactPlanVerifier
+        self, scenario_name: str, scenario: Mapping[str, Any], simulator: ExactVoxelSimulator
     ) -> None:
         self.scenario_name = scenario_name
+        self.simulator = simulator
         self.grid_pitches_xy_mm = tuple(
             tuple(map(float, pair))
             for pair in scenario["candidate_grid_pitches_xy_mm"]
@@ -43,11 +43,9 @@ class ConfiguredRasterPlanGenerator:
             raise ValueError("raster shape must contain positive odd sides")
         if min(map(min, self.grid_pitches_xy_mm)) <= 0.0 or min(self.energies_j) <= 0.0:
             raise ValueError("candidate raster pitches and energies must be positive")
-        self.verifier = verifier
-
     def generate(self, state: VoxelState) -> tuple[PlanCandidate, ...]:
-        """Return only complete candidates accepted by exact voxel physics."""
-        accepted: list[PlanCandidate] = []
+        """Return all configured raw rasters without voxel simulation or filtering."""
+        candidates: list[PlanCandidate] = []
         x_offsets = tuple(index - self.grid_shape[0] // 2 for index in range(self.grid_shape[0]))
         y_offsets = tuple(index - self.grid_shape[1] // 2 for index in range(self.grid_shape[1]))
         for pitch_x_mm, pitch_y_mm in self.grid_pitches_xy_mm:
@@ -62,19 +60,8 @@ class ConfiguredRasterPlanGenerator:
                     for row, y_index in enumerate(y_offsets)
                     for x_index in (x_offsets if row % 2 == 0 else x_offsets[::-1])
                 )
-                current = state.copy()
-                actions: list[PhysicalAction] = []
-                for action in raster:
-                    if not self.verifier.simulator.first_contact(current, action).hit:
-                        continue
-                    actions.append(action)
-                    current = self.verifier.simulator.step(current, action)
-                    if evaluate_ablation(current).is_complete(
-                        self.verifier.completion_remaining_pct
-                    ):
-                        break
                 candidate = PlanCandidate(
-                    tuple(actions),
+                    raster,
                     f"{self.scenario_name}_raster:px={pitch_x_mm:.6g}:py={pitch_y_mm:.6g}",
                     "vertical",
                     f"uniform:{energy_j:.6g}",
@@ -82,19 +69,14 @@ class ConfiguredRasterPlanGenerator:
                     1.0,
                     "serpentine",
                 )
-                if actions and self.verifier.verify(state, tuple(actions)).valid:
-                    accepted.append(candidate)
+                candidates.append(candidate)
                 print(
                     f"global candidate scenario={self.scenario_name} "
                     f"pitch=({pitch_x_mm:.3f},{pitch_y_mm:.3f}) "
-                    f"energy={energy_j:.3f} pulses={len(actions)} accepted={len(accepted)}",
+                    f"energy={energy_j:.3f} configured_pulses={len(raster)}",
                     flush=True,
                 )
-        if not accepted:
-            raise GlobalPlanningFailure(
-                f"no exact-valid raster plan for scenario {self.scenario_name!r}"
-            )
-        return tuple(accepted)
+        return tuple(candidates)
 
 
 __all__ = ["ConfiguredRasterPlanGenerator"]

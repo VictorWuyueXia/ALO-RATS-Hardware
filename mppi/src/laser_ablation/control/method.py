@@ -55,11 +55,11 @@ def load_method(controller_path: Path, devices) -> ResolvedMethod:
     root = path.parent.parent
     controller = load_yaml(path)
     paths = {name: root / controller["shared_configs"][name]
-             for name in ("physics", "planner", "frozen_global")}
+             for name in ("physics", "planner", "geometry_aware_global")}
     paths.update(controller=path, compute=root / controller["compute_config"])
     values = {name: load_yaml(source) for name, source in paths.items()}
     for name in ("physics", "planner"):
-        if (root / values["frozen_global"]["shared_configs"][name]).resolve() != paths[name].resolve():
+        if (root / values["geometry_aware_global"]["shared_configs"][name]).resolve() != paths[name].resolve():
             raise ValueError("Global source and controller require the same method authority")
     # Match the complete detected JAX device set to one declared compute authority.
     if not devices:
@@ -83,7 +83,7 @@ def load_method(controller_path: Path, devices) -> ResolvedMethod:
     mppi = MPPIRepairConfig(**mppi_values, rollout_batch_size=profile["rollout_batch_size"])
     return ResolvedMethod(
         physics_from_mapping(values["physics"]), bounds_from_mapping(values["physics"]),
-        mppi, values["frozen_global"]["geometry_aware_global"],
+        mppi, values["geometry_aware_global"]["geometry_aware_global"],
         float(values["planner"]["completion_remaining_pct"]),
         float(values["planner"]["hard_margin_mm"]), int(controller["maximum_pulses"]),
         int(controller["periodic_repair_pulses"]),

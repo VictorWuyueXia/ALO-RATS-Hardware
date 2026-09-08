@@ -24,7 +24,8 @@ from laser_ablation.planning.jax_bank.contracts import (
     QuickRolloutBatch,
     StaticTaskTensors,
 )
-from laser_ablation.planning.jax_bank.global_seeds import HybridGlobalSeeds
+from laser_ablation.planning.global_3d.interface import GlobalPlanningFailure
+from laser_ablation.planning.jax_bank.global_seeds import RasterGlobalSeeds
 from laser_ablation.planning.jax_bank.repair import (
     GlobalReplanReason,
     GlobalReplanRequired,
@@ -32,7 +33,7 @@ from laser_ablation.planning.jax_bank.repair import (
     RepairRequest,
 )
 from laser_ablation.planning.jax_bank.mppi_repairer import MPPIPlanRepairer
-from laser_ablation.planning.jax_bank.rollout import rollout_batch, rollout_in_batches
+from laser_ablation.planning.jax_bank.rollout import rollout_in_batches
 from laser_ablation.planning.jax_bank.similarity import (
     _routed_roi_values,
     matching_tail_bank,
@@ -50,7 +51,8 @@ class JaxPlanBankPlanner:
         completion_remaining_fraction: float,
         repairer: MPPIPlanRepairer,
         devices: tuple[object, ...],
-        rollout_batch_size: int | None = None,
+        rollout_batch_size: int,
+        geometry_generator: object | None,
     ) -> None:
         if maximum_pulses <= 0:
             raise ValueError("maximum_pulses must be positive")
@@ -62,9 +64,11 @@ class JaxPlanBankPlanner:
         if not devices:
             raise ValueError("JAX plan-bank planner requires explicit devices")
         self.devices = devices
-        if rollout_batch_size is not None and rollout_batch_size <= 0:
-            raise ValueError("rollout_batch_size must be positive when supplied")
+        if rollout_batch_size <= 0:
+            raise ValueError("rollout_batch_size must be positive")
         self.rollout_batch_size = rollout_batch_size
+        self.geometry_generator = geometry_generator
+        self.global_planning_calls = 0
         self.bank: PlanBank | None = None
         self._parent_trajectory_ids: dict[str, str] = {}
 
@@ -73,52 +77,45 @@ class JaxPlanBankPlanner:
         voxel_state: VoxelState,
         sdf_state: SDFState,
         raster_generator: object,
-        frozen_generator: object,
         bank_directory: Path | None = None,
     ) -> ProvisionalPlan:
-        """Build hybrid seeds, initialize MPPI, and retain a surrogate plan bank."""
+        """Screen four rasters and add geometry-aware parents after initial planning."""
         task = StaticTaskTensors.from_state(
             voxel_state, sdf_state, self.bounds, self.physics,
             self.completion_remaining_fraction,
         )
         bank = PlanBank(task, self.maximum_pulses)
-        seeds = HybridGlobalSeeds.build(
-            voxel_state, raster_generator, frozen_generator
-        )
-        nominal_batch = PaddedActionBatch.from_sequences(
-            seeds.nominal_actions,
-            tuple(f"comparison_seed:{index}" for index in range(len(seeds.nominal_actions))),
+        include_geometry = self.global_planning_calls > 0
+        self.global_planning_calls += 1
+        seeds = RasterGlobalSeeds.build(
+            voxel_state, raster_generator,
+            self.geometry_generator if include_geometry else None,
         )
         generated_actions = seeds.actions
         generated_origins = seeds.source_ids
         generated_batch = PaddedActionBatch.from_sequences(generated_actions, generated_origins)
-        generated_paths = np.full(
-            generated_batch.action_mask.shape + (2,), -1, dtype=np.int32
+        expanded_actions, expanded_origins = self.repairer.expand_initial(
+            task, generated_batch, generated_origins
         )
-        for row, nominal_seed in enumerate(seeds.raw_to_nominal_seed):
-            length = int(np.count_nonzero(generated_batch.action_mask[row]))
-            generated_paths[row, :length, 0] = nominal_seed
-            generated_paths[row, :length, 1] = np.arange(length, dtype=np.int32)
-        expanded_actions, expanded_origins, expanded_paths = self.repairer.expand_initial(
-            task, generated_batch, generated_origins, generated_paths
-        )
-        if len(expanded_actions) != len(generated_actions) or expanded_origins != generated_origins:
-            raise RuntimeError("initial path-integral MPPI must preserve every source lineage")
+        if not expanded_actions:
+            raise GlobalPlanningFailure("initial MPPI produced zero hard-feasible weighted children")
+        if len(expanded_actions) > len(generated_actions):
+            raise RuntimeError("global MPPI retained more lineages than its parent population")
         expanded_batch = PaddedActionBatch.from_sequences(expanded_actions, expanded_origins)
         routed_paths = np.full(expanded_batch.action_mask.shape + (2,), -1, dtype=np.int32)
-        for row, (actions, path) in enumerate(zip(expanded_actions, expanded_paths, strict=True)):
-            routed_paths[row, :len(actions)] = path
+        for row, actions in enumerate(expanded_actions):
+            routed_paths[row, :len(actions), 0] = row
+            routed_paths[row, :len(actions), 1] = np.arange(len(actions), dtype=np.int32)
         print(
-            f"initial path-integral verification started lineages={expanded_batch.actions.shape[0]} "
+            f"global path-integral verification started lineages={expanded_batch.actions.shape[0]} "
             f"padded_pulses={expanded_batch.actions.shape[1]}",
             flush=True,
         )
         expanded_rollout = self._rollout(task, expanded_batch)
-        nominal_rollout = self._rollout(task, nominal_batch)
-        print("initial path-integral verification completed", flush=True)
+        print("global path-integral verification completed", flush=True)
         comparison_library = build_comparison_roi_library(
-            nominal_rollout.current_sdf, nominal_batch.action_mask, nominal_batch.actions[..., 4],
-            seeds.nominal_canonical_hashes, task.fingerprint,
+            expanded_rollout.current_sdf, expanded_batch.action_mask, expanded_batch.actions[..., 4],
+            expanded_origins, task.fingerprint,
         )
         for index, actions in enumerate(expanded_actions):
             print(
@@ -135,7 +132,7 @@ class JaxPlanBankPlanner:
         bank.comparison_library = comparison_library
         bank.retain_top()
         print(
-            f"initial plan bank retained={len(bank.trajectories)} "
+            f"global plan bank retained={len(bank.trajectories)} "
             f"active={sum(record.active for record in bank.trajectories)}",
             flush=True,
         )
@@ -151,14 +148,14 @@ class JaxPlanBankPlanner:
                 {
                     "planner": type(self).__name__,
                     "generated_candidates": len(generated_actions),
-                    "fixed_lineages": len(bank.trajectories),
+                    "selected_lineages": len(bank.trajectories),
                     "active_lineages": sum(record.active for record in bank.trajectories),
                     "generated_candidate_lengths": [
                         len(actions) for actions in generated_actions
                     ],
                     "repairer": type(self.repairer).__name__,
                     "selected_trajectory": active.trajectory_id,
-                    "hybrid_global_seeds": seeds.provenance,
+                    "global_seeds": seeds.provenance,
                     "comparison_roi_library": {
                         "fingerprint": comparison_library.library_fingerprint,
                         "storage_bytes": comparison_library.storage_bytes,
@@ -318,9 +315,7 @@ class JaxPlanBankPlanner:
     def _rollout(
         self, task: StaticTaskTensors, batch: PaddedActionBatch
     ) -> QuickRolloutBatch:
-        """Use full-batch execution normally and explicit bounded batches when requested."""
-        if self.rollout_batch_size is None:
-            return rollout_batch(task, batch, self.devices)
+        """Execute full-state rollouts in explicitly bounded batches."""
         return rollout_in_batches(
             task, batch, self.rollout_batch_size, self.devices
         )

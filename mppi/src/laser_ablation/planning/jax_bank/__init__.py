@@ -10,7 +10,7 @@ from laser_ablation.planning.jax_bank.contracts import (
 )
 from laser_ablation.planning.jax_bank.planner import JaxPlanBankPlanner
 from laser_ablation.planning.jax_bank.mppi_repairer import MPPIPlanRepairer
-from laser_ablation.planning.jax_bank.global_seeds import HybridGlobalSeeds
+from laser_ablation.planning.jax_bank.global_seeds import RasterGlobalSeeds
 from laser_ablation.planning.jax_bank.exact_segment import ExactSegmentBeam
 from laser_ablation.planning.jax_bank.comparison_library import (
     ComparisonROILibrary,
@@ -46,7 +46,7 @@ __all__ = [
     "BankTrajectory",
     "ComparisonROILibrary",
     "JaxPlanBankPlanner",
-    "HybridGlobalSeeds",
+    "RasterGlobalSeeds",
     "DeviceLinearizationWorkspace",
     "ExactSegmentBeam",
     "LinearizationLibrary",

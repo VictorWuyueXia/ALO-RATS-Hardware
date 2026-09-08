@@ -56,14 +56,14 @@ def run_full_capability(
         tuple(map(float, noise["response_scale_bounds"])),
         physics_seed,
     )
-    frozen_values = load_yaml(config.frozen_global_path)
+    geometry_values = load_yaml(config.geometry_aware_global_path)
     components = build_planning_components(
         physics=physics, bounds=bounds, mppi=config.mppi, devices=devices,
         random_seed=mppi_seed, maximum_pulses=config.maximum_pulses,
         completion_remaining_pct=float(planner_values["completion_remaining_pct"]),
         hard_margin_mm=float(planner_values["hard_margin_mm"]),
         raster_name=config.scenario_name, raster_settings=config.scenario,
-        global_settings=frozen_values["geometry_aware_global"],
+        global_settings=geometry_values["geometry_aware_global"],
     )
     controller = UnifiedAblationController(
         planner=components.planner,
@@ -77,7 +77,7 @@ def run_full_capability(
     initial_state = scenario.geometry.initial_state()
     started = perf_counter()
     result = controller.run(
-        initial_state, components.raster_generator, components.frozen_generator, output, mppi_seed
+        initial_state, components.raster_generator, output, mppi_seed
     )
     elapsed = perf_counter() - started
     initial_archive = np.load(machine / "plan_banks/global_000/actions.npz")
@@ -118,7 +118,7 @@ def _write_artifacts(
         "mppi": asdict(config.mppi),
         "shared_configs": {
             "physics": str(config.physics_path), "planner": str(config.planner_path),
-            "frozen_global": str(config.frozen_global_path),
+            "geometry_aware_global": str(config.geometry_aware_global_path),
         },
     }
     (machine / "effective_merged_config.yaml").write_text(

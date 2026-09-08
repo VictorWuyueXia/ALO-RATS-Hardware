@@ -17,6 +17,7 @@ FLAG_NAMES = (
     "clearance_violation",
     "nonfinite",
 )
+ROLLOUT_DIAGNOSTIC_FLAG_NAMES = ("no_positive_removal",)
 
 
 def _jax_modules():

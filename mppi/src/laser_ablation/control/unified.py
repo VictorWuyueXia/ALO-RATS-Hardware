@@ -25,11 +25,11 @@ class UnifiedAblationController:
         self.maximum_pulses = int(maximum_pulses)
         self.device_identity = device_identity
 
-    def run(self, initial_state, raster_generator, frozen_generator,
+    def run(self, initial_state, raster_generator,
             output_directory: Path, random_seed: int) -> UnifiedControllerResult:
         """Keep execution, measurement, and experiment timing outside the decision kernel."""
         session = ControllerSession(
-            self.planner, self.observer, raster_generator, frozen_generator,
+            self.planner, self.observer, raster_generator,
             self.completion_remaining_pct, self.periodic_repair_pulses, self.maximum_pulses,
             output_directory, random_seed,
         )

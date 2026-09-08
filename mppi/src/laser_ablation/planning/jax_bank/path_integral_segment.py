@@ -35,14 +35,6 @@ def stream_path_integral_segment(
         raise ValueError("path-integral segments must begin at each cached boundary")
 
     sample_count = executor.config.samples_per_anchor
-    device_count = len(executor.devices)
-    parallel_batch_size = max(
-        microbatch_size,
-        executor.config.max_anchors * sample_count,
-    )
-    parallel_batch_size = (
-        (parallel_batch_size + device_count - 1) // device_count
-    ) * device_count
     width = max(
         executor.config.segment_minimum_pulses,
         (beam.maximum_pulses + executor.config.segment_maximum_count - 1)
@@ -67,8 +59,8 @@ def stream_path_integral_segment(
         segment_mask[rows, :segment_width] = True
     segment_at = perf_counter()
     segment = rollout_terminal_in_batches(
-        task, np.repeat(state.boundary_sdf, sample_count, axis=0),
-        segment_actions, segment_mask, parallel_batch_size, executor.devices,
+        task, state.boundary_sdf, segment_actions, segment_mask, microbatch_size,
+        executor.devices, initial_rows=parent_rows,
     )
     segment_seconds = perf_counter() - segment_at
     segment_feasible = np.flatnonzero(segment.constraint_feasible)
@@ -92,7 +84,7 @@ def stream_path_integral_segment(
     suffix_at = perf_counter()
     suffix = rollout_terminal_in_batches(
         task, segment.current_sdf[segment_feasible], suffix_actions, suffix_mask,
-        parallel_batch_size, executor.devices,
+        microbatch_size, executor.devices,
     )
     suffix_seconds = perf_counter() - suffix_at
     for name, values in suffix.flags.items():

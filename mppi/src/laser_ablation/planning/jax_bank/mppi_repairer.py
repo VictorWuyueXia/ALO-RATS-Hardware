@@ -55,12 +55,8 @@ class MPPIPlanRepairer:
         task: StaticTaskTensors,
         batch: PaddedActionBatch,
         origins: tuple[str, ...],
-        linearization_path: np.ndarray,
-    ) -> tuple[tuple[np.ndarray, ...], tuple[str, ...], tuple[np.ndarray, ...]]:
-        """Return one nonlinear path-integral update for every global-source lineage."""
-        paths = np.asarray(linearization_path, dtype=np.int32)
-        if paths.shape != batch.actions.shape[:2] + (2,):
-            raise ValueError("initial MPPI paths must align with the source action batch")
+    ) -> tuple[tuple[np.ndarray, ...], tuple[str, ...]]:
+        """Return only hard-feasible weighted children from the raw global parents."""
         tail_ids = tuple(
             sha256((
                 action_hash(batch.actions[row, :int(np.count_nonzero(batch.action_mask[row]))])
@@ -76,7 +72,7 @@ class MPPIPlanRepairer:
             samples, perturbations = self.executor.sample(
                 self.initial_seed, iteration, tail_ids, source_rows, nominal, mask, mask, task
             )
-            rollout = self.executor.rollout(samples, mask, tail_ids, source_rows, task, iteration)
+            rollout = self.executor.screen(samples, mask, tail_ids, source_rows, task, iteration)
             _, _, weights = self.executor.cost_and_weights(
                 samples, origin, mask, rollout, task
             )
@@ -90,11 +86,19 @@ class MPPIPlanRepairer:
                 f"median_ess={float(np.median(effective_samples)) if len(effective_samples) else 0.0:.2f}",
                 flush=True,
             )
+        children = self.executor.screen(
+            nominal[:, None], mask, tail_ids, source_rows, task, self.config.iterations,
+        )
+        selected = np.flatnonzero(children.constraint_feasible)
+        print(
+            f"initial MPPI weighted-children hard_feasible={len(selected)}/{len(nominal)}",
+            flush=True,
+        )
         lengths = np.count_nonzero(mask, axis=1)
+        retained_lengths = np.minimum(lengths[selected], children.pulse_count[selected])
         return (
-            tuple(nominal[row, :length].copy() for row, length in enumerate(lengths)),
-            tuple(origins),
-            tuple(paths[row, :length].copy() for row, length in enumerate(lengths)),
+            tuple(nominal[row, :length].copy() for row, length in zip(selected, retained_lengths, strict=True)),
+            tuple(origins[row] for row in selected),
         )
 
     def repair(
