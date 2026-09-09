@@ -30,7 +30,7 @@ def nominal_scan():
 def nominal_designation():
     """Match the synthetic fixture lattice to the MPPI controller observation contract."""
     return TaskDesignation((TargetRegion("rectangle", (0, 0), (1.0, 0.8), 0.8, None),),
-                           ((-2.8, 2.8), (-2.8, 2.8), (-3.0, 0.6)), -2.0, 0.5,
+                           ((-2.8, 2.8), (-2.8, 2.8), (-3.0, 0.6)), 2.0, 0.5,
                            "nominal_tissue", "nominal_registration_surface_task_only")
 
 

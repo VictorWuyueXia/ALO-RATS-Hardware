@@ -40,7 +40,7 @@ def test_analytic_scan_volume_and_sdf(tilted):
 
 def test_default_constraint_plane_tracks_the_initial_surface_one_mm_below_target():
     """The default 3 mm constraint plane leaves a 1 mm interval below the 2 mm target floor."""
-    from simulation_cases import simulation_case
+    from simulation.simulation.simulation_cases import simulation_case
 
     case = simulation_case("centered_rectangle")
     state = designate_task(case.scan(), case.designation).state

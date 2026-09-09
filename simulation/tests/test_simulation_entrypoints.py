@@ -69,10 +69,10 @@ from laser_ablation.control import method
 profile = Mock()
 profile.activate.return_value = ()
 method.ComputeProfile = Mock(return_value=profile)
-method.activate_compute_profile(Path.cwd().parent / "mppi/configs/controller.yaml", "cpu")
+method.activate_compute_profile(Path.cwd() / "mppi/configs/controller.yaml", "cpu")
 assert method.ComputeProfile.call_args.args[:4] == ("cpu", "cpu", (0,), 4)
 """
-    result = subprocess.run([sys.executable, "-c", code], cwd=Path(__file__).parent,
+    result = subprocess.run([sys.executable, "-c", code], cwd=Path(__file__).resolve().parents[2],
                             capture_output=True, text=True, timeout=30)
     assert result.returncode == 0, result.stdout + result.stderr
 
