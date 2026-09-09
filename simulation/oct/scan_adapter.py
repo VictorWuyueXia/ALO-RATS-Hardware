@@ -48,7 +48,9 @@ def designate_task(scan, designation):
             raise ValueError("Target is empty or extends below known tissue")
         target |= inside[:, :, None] & (axes[2][None, None, :] >= floor[:, :, None] - 1e-8)
     target &= tissue
-    protected = tissue & (axes[2][None, None, :] <= designation.protected_floor_mm)
+    # Mark cells intersecting the surface-relative constraint plane, including the lower boundary cell.
+    constraint_surface = surface - designation.constraint_depth_mm
+    protected = tissue & (axes[2][None, None, :] - SPACING_MM / 2 <= constraint_surface[:, :, None] + 1e-8)
     if not target.any() or not protected.any() or np.any(target & protected):
         raise ValueError("Target/protection must be nonempty and disjoint")
     state = VoxelState(

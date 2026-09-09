@@ -18,6 +18,7 @@ ACTION_DIMENSION = 5
 CHANNEL_ORDER = ("current_tissue", "target", "safe", "remaining", "removed", "overcut")
 ACTIVE_ALIGNMENT_THRESHOLD = 0.995
 ANCHOR_SIMILARITY_THRESHOLD = 0.990
+# A shard is one bounded state-memory payload persisted as a single artifact file.
 STATE_SHARD_BYTES = 256 * 1024 * 1024
 BANK_DIVERSITY_BONUS = 0.02
 

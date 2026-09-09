@@ -169,7 +169,7 @@ class VolumetricCoverageConfig:
     """
 
     coverage_pitches_mm: tuple[float, ...] = (0.6, 0.9)
-    maximum_pulses: int = 160
+    maximum_pulses: int = 64
     maximum_candidates: int = 300
     maximum_repeats_per_anchor: int = 6
     energy_fractions: tuple[float, ...] = (0.82, 0.20, 1.00, 0.60, 0.08, 0.40)

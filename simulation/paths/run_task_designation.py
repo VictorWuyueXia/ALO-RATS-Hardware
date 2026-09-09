@@ -54,9 +54,9 @@ class TaskEditor:
         right_depth = region.depth_mm if region.right_depth_mm is None else region.right_depth_mm
         self.depth = DesignationTextBox(self.figure.add_axes([0.25, 0.10, 0.11, 0.06]), "", initial=str(region.depth_mm))
         self.right = DesignationTextBox(self.figure.add_axes([0.40, 0.10, 0.11, 0.06]), "", initial=str(right_depth))
-        self.protection = DesignationTextBox(self.figure.add_axes([0.55, 0.10, 0.11, 0.06]), "", initial=str(designation.protected_floor_mm))
+        self.protection = DesignationTextBox(self.figure.add_axes([0.55, 0.10, 0.11, 0.06]), "", initial=str(designation.constraint_depth_mm))
         for field, label in ((self.depth, "Left depth [mm]"), (self.right, "Right depth [mm]"),
-                              (self.protection, "Protected Z [mm]")):
+                              (self.protection, "Constraint depth [mm]")):
             field.ax.set_title(label, fontsize=12, pad=8)
             field.text_disp.set_fontsize(13)
         self.add = Button(self.figure.add_axes([0.71, 0.10, 0.12, 0.06]), "Add region")
@@ -119,7 +119,7 @@ class TaskEditor:
             self.patches.append(patch)
         try:
             self.designation = replace(self.designation, regions=tuple(self.regions),
-                                       protected_floor_mm=float(self.protection.text))
+                                       constraint_depth_mm=float(self.protection.text))
             self.task = designate_task(self.scan, self.designation)
         except ValueError as error:
             self.message.set_text(f"INVALID TASK — cannot approve: {error}")

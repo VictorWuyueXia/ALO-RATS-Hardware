@@ -96,18 +96,17 @@ class SegmentBeam:
         trace_bytes = (frames * voxels * 4) + (8 * frames * 4) + (9 * pulses) + 2
         return int(beam_bytes + trace_bytes)
 
-    def segment_bounds(self, segment_index: int, minimum_pulses: int, maximum_count: int) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
-        if segment_index < 0 or minimum_pulses <= 0 or maximum_count <= 0:
-            raise ValueError("segment index must be nonnegative; pulse length and count must be positive")
+    def segment_bounds(
+        self, segment_index: int, segment_length_pulses: int, minimum_pulses: int,
+    ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+        if segment_index < 0 or segment_length_pulses <= 0 or minimum_pulses <= 0:
+            raise ValueError("segment index must be nonnegative and segment lengths must be positive")
+        if minimum_pulses > segment_length_pulses:
+            raise ValueError("segment minimum cannot exceed the fixed segment length")
         lengths = np.count_nonzero(self.action_mask, axis=1).astype(np.int32)
-        counts = np.minimum(
-            np.int32(maximum_count),
-            np.maximum(np.int32(1), (lengths + minimum_pulses - 1) // minimum_pulses),
-        )
-        widths = (lengths + counts - 1) // counts
-        starts = np.minimum(np.int32(segment_index) * widths, lengths)
-        stops = np.minimum(starts + widths, lengths)
-        return starts, stops, starts < stops
+        starts = np.minimum(np.int32(segment_index * segment_length_pulses), lengths)
+        stops = np.minimum(starts + np.int32(segment_length_pulses), lengths)
+        return starts, stops, stops - starts >= minimum_pulses
 
     def take(self, indices: np.ndarray) -> "SegmentBeam":
         """Copy a deterministic retained subset into a new immutable beam."""

@@ -15,12 +15,14 @@ def main():
 
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--case", choices=LAUNCH_CASE_NAMES, required=True)
+    parser.add_argument("--compute", help="Configured compute profile, such as cpu or 1gpu")
     parser.add_argument("--output-dir", type=Path, required=True)
     args = parser.parse_args()
     if args.output_dir.exists():
         raise FileExistsError(f"Use a new output directory: {args.output_dir}")
     try:
-        launch(args.case, args.output_dir, gui=True, isolation_violations=violations)
+        launch(args.case, args.output_dir, gui=True, isolation_violations=violations,
+               compute_profile=args.compute)
     finally:
         if args.output_dir.is_dir():
             try:

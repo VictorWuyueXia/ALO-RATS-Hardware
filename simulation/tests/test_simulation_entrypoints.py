@@ -27,6 +27,10 @@ def test_method_matches_the_detected_jax_device_layout(
     assert method.mppi.rollout_batch_size == rollout_batch_size
     assert method.mppi.max_anchors == 10
     assert method.mppi.samples_per_anchor == 512
+    assert method.maximum_pulses == 64
+    assert method.mppi.segment_length_pulses == 10
+    assert method.mppi.segment_minimum_pulses == 1
+    assert method.mppi.segment_count(method.maximum_pulses) == 7
 
 
 def test_method_rejects_an_unconfigured_jax_device_layout():
@@ -53,6 +57,22 @@ assert constructor.call_args.args[0] == "1gpu"
 assert constructor.call_args.args[4] is False
 """
     result = subprocess.run([sys.executable, "-c", code], cwd=Path(__file__).resolve().parents[2],
+                            capture_output=True, text=True, timeout=30)
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
+def test_simulation_compute_override_selects_cpu_profile():
+    code = """
+from pathlib import Path
+from unittest.mock import Mock
+from laser_ablation.control import method
+profile = Mock()
+profile.activate.return_value = ()
+method.ComputeProfile = Mock(return_value=profile)
+method.activate_compute_profile(Path.cwd().parent / "mppi/configs/controller.yaml", "cpu")
+assert method.ComputeProfile.call_args.args[:4] == ("cpu", "cpu", (0,), 4)
+"""
+    result = subprocess.run([sys.executable, "-c", code], cwd=Path(__file__).parent,
                             capture_output=True, text=True, timeout=30)
     assert result.returncode == 0, result.stdout + result.stderr
 
@@ -109,9 +129,9 @@ def test_diagnostic_does_not_replace_any_frozen_positive_case():
     assert case.manifest()["random_seed"] == 20260902
     baseline = simulation_case("centered_rectangle")
     assert SIMULATION_CONFIG_PATH == ROOT / "config/simulation_cases.yaml"
-    assert baseline.designation.regions[0].half_size_xy_mm == (1.75, 1.75)
+    assert baseline.designation.regions[0].half_size_xy_mm == (2.0, 2.0)
     assert baseline.designation.regions[0].depth_mm == 2.0
-    assert baseline.designation.protected_floor_mm == -3.6
+    assert baseline.designation.constraint_depth_mm == 3.0
     assert baseline.raster_settings["candidate_energies_j"] == (4.0, 8.0)
     assert case.scan().lower_boundary_mm == case.designation.grid_bounds_mm[2][0] == -2.0
     with pytest.raises(ValueError):

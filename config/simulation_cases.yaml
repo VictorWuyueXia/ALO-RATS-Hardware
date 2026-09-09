@@ -21,11 +21,11 @@ cases:
       regions:
         - shape: rectangle
           center_xy_mm: [0.0, 0.0]
-          half_size_xy_mm: [1.75, 1.75]
+          half_size_xy_mm: [2.0, 2.0]
           depth_mm: 2.0
           right_depth_mm: null
-      grid_bounds_mm: [[-2.25, 2.25], [-2.25, 2.25], [-6.0, 0.2]]
-      protected_floor_mm: -3.6
+      grid_bounds_mm: [[-3.0, 3.0], [-3.0, 3.0], [-3.0, 0.0]]
+      constraint_depth_mm: 3.0
       plane_z_mm: 0.0
       frame_id: nominal_tissue
       authority_id: nominal_registration_surface_task_only
@@ -45,7 +45,7 @@ cases:
           depth_mm: 1.0
           right_depth_mm: null
       grid_bounds_mm: [[-2.8, 2.8], [-2.8, 2.8], [-3.0, 0.6]]
-      protected_floor_mm: -2.4
+      constraint_depth_mm: 2.4
       plane_z_mm: 0.5
       frame_id: nominal_tissue
       authority_id: nominal_registration_surface_task_only
@@ -65,7 +65,7 @@ cases:
           depth_mm: 0.6
           right_depth_mm: 1.2
       grid_bounds_mm: [[-2.8, 2.8], [-2.8, 2.8], [-3.0, 0.6]]
-      protected_floor_mm: -2.4
+      constraint_depth_mm: 2.4
       plane_z_mm: 0.5
       frame_id: nominal_tissue
       authority_id: nominal_registration_surface_task_only
@@ -90,7 +90,7 @@ cases:
           depth_mm: 0.9
           right_depth_mm: null
       grid_bounds_mm: [[-2.8, 2.8], [-2.8, 2.8], [-3.0, 0.6]]
-      protected_floor_mm: -2.4
+      constraint_depth_mm: 2.4
       plane_z_mm: 0.5
       frame_id: nominal_tissue
       authority_id: nominal_registration_surface_task_only
@@ -110,7 +110,7 @@ cases:
           depth_mm: 1.0
           right_depth_mm: null
       grid_bounds_mm: [[-2.8, 2.8], [-2.8, 2.8], [-3.0, 0.6]]
-      protected_floor_mm: -1.5
+      constraint_depth_mm: 1.5
       plane_z_mm: 0.5
       frame_id: nominal_tissue
       authority_id: nominal_registration_surface_task_only
@@ -126,11 +126,11 @@ cases:
       regions:
         - shape: rectangle
           center_xy_mm: [0.0, 0.0]
-          half_size_xy_mm: [1.75, 1.75]
+          half_size_xy_mm: [2.0, 2.0]
           depth_mm: 2.0
           right_depth_mm: null
-      grid_bounds_mm: [[-2.25, 2.25], [-2.25, 2.25], [-6.0, 0.2]]
-      protected_floor_mm: -3.6
+      grid_bounds_mm: [[-3.0, 3.0], [-3.0, 3.0], [-3.0, 0.0]]
+      constraint_depth_mm: 3.0
       plane_z_mm: 0.0
       frame_id: nominal_tissue
       authority_id: nominal_registration_surface_task_only
@@ -150,7 +150,7 @@ cases:
           depth_mm: 0.5
           right_depth_mm: null
       grid_bounds_mm: [[-1.2, 1.2], [-1.2, 1.2], [-2.0, 0.4]]
-      protected_floor_mm: -1.5
+      constraint_depth_mm: 1.5
       plane_z_mm: 0.3
       frame_id: nominal_tissue
       authority_id: nominal_registration_surface_task_only

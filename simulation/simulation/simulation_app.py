@@ -23,12 +23,15 @@ from simulation.simulation.workflow import run_workflow
 from simulation.visualization.workflow_display import WorkflowDisplay
 
 
-def execute_case(case, scan, designation, output, *, gui, wait_for_start, isolation_violations):
+def execute_case(
+    case, scan, designation, output, *, gui, wait_for_start, isolation_violations,
+    compute_profile=None,
+):
     """Share exactly the same causal loop between DIRECT checks and live GUI execution."""
     output = Path(output).resolve()
     records = RunRecords(output)
     controller_path = ROOT / "mppi/configs/controller.yaml"
-    devices = activate_compute_profile(controller_path)
+    devices = activate_compute_profile(controller_path, compute_profile)
     import jax
     method = load_method(controller_path, devices)
     components = method.components(case.name, case.raster_settings, devices, RANDOM_SEED)
@@ -77,7 +80,7 @@ def execute_case(case, scan, designation, output, *, gui, wait_for_start, isolat
             p.disconnect(client)
 
 
-def launch(case_name, output, *, gui, isolation_violations):
+def launch(case_name, output, *, gui, isolation_violations, compute_profile=None):
     """Load the nominal scan, obtain designation approval, then enter automatic simulation."""
     output = Path(output).resolve()
     output.mkdir(parents=True, exist_ok=False)
@@ -96,4 +99,4 @@ def launch(case_name, output, *, gui, isolation_violations):
         designation = editor.designation
     save_designation(designation, output / "task.json")
     execute_case(case, scan, designation, output, gui=gui, wait_for_start=gui,
-                 isolation_violations=isolation_violations)
+                 isolation_violations=isolation_violations, compute_profile=compute_profile)

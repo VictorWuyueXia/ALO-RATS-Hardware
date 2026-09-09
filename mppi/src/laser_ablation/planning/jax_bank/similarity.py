@@ -16,7 +16,7 @@ from laser_ablation.planning.jax_bank.contracts import (
 )
 
 
-MATCHING_SHARD_ROWS = 256
+MATCHING_BATCH_ROWS = 256
 _ROUTED_ROI_KERNEL: object | None = None
 
 
@@ -144,19 +144,19 @@ def _routed_roi_values(
         raise ValueError("routed ROI comparison received an invalid comparison route")
     if np.any(~library.step_mask[seeds, steps]):
         raise ValueError("routed ROI comparison received a masked comparison route")
-    if not 0 < len(right) <= MATCHING_SHARD_ROWS:
-        raise ValueError("routed ROI comparison requires one nonempty fixed-size shard")
+    if not 0 < len(right) <= MATCHING_BATCH_ROWS:
+        raise ValueError("routed ROI comparison requires one nonempty fixed-size batch")
     indices = library.roi_indices[seeds, steps]
     mask = library.roi_mask[seeds, steps]
     count = len(right)
-    if count < MATCHING_SHARD_ROWS:
-        padding = MATCHING_SHARD_ROWS - count
+    if count < MATCHING_BATCH_ROWS:
+        padding = MATCHING_BATCH_ROWS - count
         right = np.concatenate((right, np.repeat(right[:1], padding, axis=0)))
         indices = np.concatenate((indices, np.repeat(indices[:1], padding, axis=0)))
         mask = np.concatenate((mask, np.repeat(mask[:1], padding, axis=0)))
     _, jnp = _jax_modules()
     cosine, valid_norm = _routed_roi_kernel()(
-        jnp.asarray(left.reshape(-1)), jnp.asarray(right.reshape(MATCHING_SHARD_ROWS, -1)),
+        jnp.asarray(left.reshape(-1)), jnp.asarray(right.reshape(MATCHING_BATCH_ROWS, -1)),
         jnp.asarray(indices), jnp.asarray(mask),
     )
     return np.asarray(cosine[:count], dtype=np.float32), np.asarray(valid_norm[:count], dtype=bool)
@@ -207,9 +207,9 @@ def matching_tail_bank(
             stop = prefix + (int(invalid[0]) if len(invalid) else len(usable) - prefix)
             candidates.append((trajectory, prefix, stop))
     selected: dict[str, tuple[object, int, int, float]] = {}
-    for start in range(0, len(candidates), MATCHING_SHARD_ROWS):
-        shard = candidates[start:start + MATCHING_SHARD_ROWS]
-        padded = shard + [shard[0]] * (MATCHING_SHARD_ROWS - len(shard))
+    for start in range(0, len(candidates), MATCHING_BATCH_ROWS):
+        batch = candidates[start:start + MATCHING_BATCH_ROWS]
+        padded = batch + [batch[0]] * (MATCHING_BATCH_ROWS - len(batch))
         states = np.stack(
             [trajectory.current_sdf[prefix] for trajectory, prefix, _ in padded]
         ).astype(np.float32, copy=False)
@@ -217,10 +217,10 @@ def matching_tail_bank(
             [trajectory.linearization_path[prefix] for trajectory, prefix, _ in padded]
         ).astype(np.int32, copy=False)
         values, valid_norm = _routed_roi_values(current, states, routes, library)
-        values, valid_norm = values[:len(shard)], valid_norm[:len(shard)]
+        values, valid_norm = values[:len(batch)], valid_norm[:len(batch)]
         if not np.all(valid_norm):
             raise ValueError("ROI state comparison requires finite nonzero selected geometry norms")
-        for (trajectory, prefix, stop), similarity in zip(shard, values, strict=True):
+        for (trajectory, prefix, stop), similarity in zip(batch, values, strict=True):
             if similarity < minimum_similarity:
                 continue
             previous = selected.get(trajectory.trajectory_id)
