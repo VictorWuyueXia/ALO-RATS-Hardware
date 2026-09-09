@@ -10,10 +10,10 @@ requires-python = ">=3.10"
 dependencies = [
   "matplotlib>=3.6",
   "nibabel>=5.0",
-  "numpy>=1.23",
+  "numpy>=1.23,<2",
   "PyYAML>=6.0",
-  "scipy>=1.9",
-  "jax>=0.4.30",
+  "scipy>=1.9,<1.14",
+  "jax>=0.4.30,<0.5",
   "casadi>=3.7,<4",
 ]
 

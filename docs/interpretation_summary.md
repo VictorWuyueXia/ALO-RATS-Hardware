@@ -1,11 +1,14 @@
-# Experiment runbook interpretation summary
+# OCT and laser integration interpretation summary
 
-The operator can run the nominal simulation and the processed-OCT UR5e dry run from the current checkout. The OCT-geometry simulation is only preparable, and physical phantom resection is not executable because the hardware closed loop is absent.
+The current checkout implements mounted-folder OCT reconstruction, target/protected-boundary designation, unchanged MPPI planning, checked RTDE action motion, the deployed Raspberry Pi JSON action vocabulary, and one-pulse/one-feedback-scan coordination. Physical mode remains disabled until the active scanner preset, transforms, robot installation, Raspberry Pi replies/watchdog, and energy table are measured and qualified.
 
-The most important operational distinction is that a processed, registered OCT `.npz` file is the current software boundary. Raw OCT acquisition, segmentation, and registration remain external. A successful dry run proves only that the task was designated, the MPPI method identity was resolved, and RTDE returned robot state; it does not prove calibrated targeting or cutting readiness.
+The corrected reference ownership is precise: `hybrid_arm_mirror/oct/` supplies OCT serial and B-scan reconstruction evidence, while `see_plan_cut/ndyag_laser_control/` supplies the Raspberry Pi GPIO and TCP-client evidence. The downloaded Pi folder contains no listening server implementation, so its live reply schema and independent cutoff remain measured inputs.
 
-For a collaborator handoff, first preserve a machine audit, then recover historical OCT and laser components in isolation. Qualify them through the runbook's ladder rather than placing unknown modules directly on the active Python path. The full workflow must fail closed after any uncertain pulse or missing/stale rescan and must preserve one execution receipt and one fresh OCT observation for each confirmed physical pulse.
+Experiments 2 and 3 require the same causal cycle: one ALO-RATS action, one verified robot pose, one bounded PWM pulse, one execution receipt, one new registered OCT observation, then one controller update. Any uncertain pulse or invalid feedback scan ends the run without an automatic retry.
 
-The delivered ALO-RATS controller is the sole algorithmic authority. It requires a fresh registered observation after every confirmed pulse and schedules plan repair every ten confirmed pulses. `see-plan-cut` is used only to locate the original hardware arrangement, calibration assets, device interfaces, and familiar operator interaction points.
+Offline validation passes. Experiment completion still requires the ordered milestone flags in the plan and physical evidence written by the coordinator.
 
-Primary operator document: [`EXPERIMENT_OPERATOR_RUNBOOK.md`](EXPERIMENT_OPERATOR_RUNBOOK.md).
+Primary documents:
+
+- [`OCT_LASER_EXPERIMENT_2_3_PLAN.md`](OCT_LASER_EXPERIMENT_2_3_PLAN.md) defines the code budget, milestones, validation, formulas, and completion flags.
+- [`0-OPERATOR_RUNBOOK.md`](0-OPERATOR_RUNBOOK.md) defines the operator sequence before, during, and after the experiments.

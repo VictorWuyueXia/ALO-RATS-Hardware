@@ -3,15 +3,17 @@ channels:
   - conda-forge
 dependencies:
   # Pin the tested runtime versions so the environment can be recreated consistently.
-  - python=3.11.16
+  - python=3.12.4
   - pip=26.2.1
   - matplotlib=3.11.1
-  - numpy=2.4.6
-  - pybullet=3.25
+  - numpy=1.26.4
   - pyvista=0.48.4
   - pyyaml=6.0.3
   - pytest=9.1.1
   - line_profiler=5.0.2
   - pip:
-      - scipy==1.17.1
+      - jax==0.4.38
+      - opencv-python-headless==4.11.0.86
+      - pybullet==3.2.7
+      - scipy==1.13.1
       - ur-rtde==1.6.5

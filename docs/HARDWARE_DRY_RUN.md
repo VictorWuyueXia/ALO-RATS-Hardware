@@ -8,7 +8,7 @@ This procedure verifies the path:
 processed OCT volume -> user designation -> MPPI method identity -> UR5e RTDE state -> evidence record
 ```
 
-There is no laser command, PWM import, or plan-action execution in this repository. `--move-safe-pose` is the sole motion command and calls UR RTDE `moveJ` with the laboratory-approved `safe_joint_pose_rad` from the local site file.
+This dry-run command never imports the PWM client and never executes an MPPI action. `--move-safe-pose` is its sole motion option and calls UR RTDE `moveJ` with the laboratory-approved `safe_joint_pose_rad` from the local site file. The separate physical experiment coordinator remains disabled until the operator-runbook qualifications are complete.
 
 ## Preconditions
 
@@ -30,6 +30,6 @@ There is no laser command, PWM import, or plan-action execution in this reposito
 
 Any invalid OCT lattice, geometry, RTDE connection, or robot reply raises an error. No missing measurement is synthesized and no alternate site configuration is used. A failed run does not infer whether a robot or scanner action occurred; inspect hardware state before retrying.
 
-## Deferred hardware work
+## Work outside this dry run
 
-Physical deployment still requires measured OCT-to-robot registration, a scanner acquisition/segmentation adapter, beam focus and action-to-pose calibration, collision/keep-out validation, a laser safety interlock, and a separately reviewed MPPI-action executor. Those components are intentionally absent from this dry run.
+ALO-RATS now contains a mounted-folder adapter, beam action executor, PWM client, and experiment coordinator, but none is exercised by this command. Physical deployment still requires measured OCT-to-robot registration, active-preset folder validation, focus/action calibration, laboratory obstacle exclusions, the independent pulse cutoff, energy calibration, and every success flag in [`0-OPERATOR_RUNBOOK.md`](0-OPERATOR_RUNBOOK.md).

@@ -5,13 +5,15 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "alo-rats-hardware"
 version = "0.1.0"
-description = "Robot-motion-only and processed-OCT interface for ALO-RATS"
+description = "UR5e, mounted-OCT, and Raspberry Pi PWM experiment interface for ALO-RATS"
 requires-python = ">=3.10"
 dependencies = [
   "matplotlib>=3.6",
-  "numpy>=1.23",
+  "line_profiler==5.0.2",
+  "numpy>=1.23,<2",
+  "opencv-python-headless==4.11.0.86",
   "PyYAML>=6.0",
-  "scipy>=1.9",
+  "scipy>=1.9,<1.14",
 ]
 
 [project.optional-dependencies]

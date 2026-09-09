@@ -1,6 +1,6 @@
 # Processed-OCT volume contract
 
-The hardware workflow accepts one `.npz` written by `alo_rats_hardware.surface_scan.save_scan`. It is a processed interchange artifact, not raw scanner output.
+The dry-run workflow accepts one `.npz` written by `alo_rats_hardware.surface_scan.save_scan`. The physical experiment coordinator creates the same artifact from a completed mounted Lumedica B-scan folder before designation or controller update.
 
 ## Required representation
 
@@ -12,11 +12,13 @@ The hardware workflow accepts one `.npz` written by `alo_rats_hardware.surface_s
 - `scan_pose_base_m`: finite proper 4×4 rigid transform of the acquisition pose.
 - metadata including nonempty `scan_id`, `frame_id`, `provenance`, and finite `timestamp_s`.
 
-The volume must be registered to the intended planning/treatment frame before it is supplied. The initial volume needs occupied tissue in every XY column selected for designation. Subsequent observations for an MPPI session must use exactly the same axes and frame; cavities and overhangs are retained as occupancy rather than flattened into a height field.
+The volume must be registered to the intended planning/treatment frame before it is supplied. The initial volume needs occupied tissue in every XY column selected for designation. Subsequent observations for an MPPI session must use exactly the same axes and frame. Externally prepared occupancy may retain cavities and overhangs. The implemented mounted-folder adapter creates a complete height field below one segmented surface, so that adapter does not represent cavities or overhangs.
 
-## Deliberately unsupported inputs
+## Input boundaries
 
-The workflow rejects raw `.jpg`/NIfTI scanner folders, point-cloud files, incomplete masks, interpolated axes, surface-only scans, and arbitrary voxel resolutions. The collaborator repository documents a separate Lumedica acquisition application and a missing `oct.module_oct_vol_scan` trigger module; no substitute driver exists in the checked-in code. A hardware-qualified scanner adapter must produce this explicit artifact rather than being guessed from file names or point-cloud conventions.
+The direct `.npz` loader rejects image folders, point-cloud files, incomplete validity masks, interpolated axes, surface-only scans, and arbitrary voxel resolutions. The physical coordinator accepts only the configured image pattern inside a new completed folder under the mounted share. Its adapter validates count, numeric order, shape, stable file signatures, intensity threshold, transform chain, and planning coverage before emitting this contract. Point clouds and NIfTI input remain unsupported.
+
+The active acquisition remains the Lumedica application on the Windows computer. Historical serial-trigger code in `hybrid_arm_mirror` is reference material and is not called by ALO-RATS.
 
 ## Minimal generation check
 

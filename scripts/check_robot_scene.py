@@ -10,6 +10,6 @@ if __name__ == "__main__":
     root = Path(__file__).resolve().parents[1]
     timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
     output = root / f"outputs/robot_scene-{timestamp}"
-    subprocess.run([sys.executable, str(root / "simulation/check_robot_scene.py"),
-                    "--output-dir", str(output)], check=True)
+    subprocess.run([sys.executable, "-m", "simulation.paths.check_robot_scene",
+                    "--output-dir", str(output)], check=True, cwd=root)
     print(output)

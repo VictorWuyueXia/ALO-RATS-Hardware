@@ -38,7 +38,8 @@ def run(site_path, scan_path, output, move_safe_pose):
     finally:
         robot.close()
     (output / "hardware_dry_run.json").write_text(json.dumps({
-        "timestamp_s": time(), "laser_control_present": False, "motion_commanded": bool(move_safe_pose),
+        "timestamp_s": time(), "site_id": site.identity, "laser_control_present": False,
+        "motion_commanded": bool(move_safe_pose),
         "robot_before": before, "robot_after": after, "processed_oct": volume_summary(scan),
         "task_id": task.task_id, "mppi_method_source_hashes": method.source_hashes,
         "compute_profile": method.compute_profile, "jax_backend": jax.default_backend(),

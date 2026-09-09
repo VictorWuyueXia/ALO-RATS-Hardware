@@ -1,131 +1,132 @@
 # Current status and transfer handoff
 
-## Purpose and present boundary
+## Present boundary
 
-ALO-RATS-Hardware is a standalone delivery workspace for the ALO-RATS MPPI planner-controller and the collaborator's UR5e support model. It keeps the MPPI numerical implementation unchanged and supplies a clean robot/OCT-facing boundary around it.
-
-The implemented and tested boundaries are:
+ALO-RATS-Hardware now contains two related workflows around the unchanged MPPI method:
 
 ```text
-nominal scan -> designation -> unchanged MPPI -> PyBullet UR5e motion
-                                  -> virtual pulse -> synthetic volume -> replanning
+synthetic observation -> designation -> MPPI -> checked PyBullet UR5e motion
+-> virtual pulse -> synthetic reobservation -> controller update
 
-processed registered OCT volume -> designation -> MPPI method identity
-                                  -> UR5e RTDE state -> evidence record
+Windows Lumedica application -> mounted B-scan folder -> registered observation
+-> designation -> MPPI -> checked physical UR5e motion -> Raspberry Pi PWM pulse
+-> return -> new mounted B-scan folder -> controller update
 ```
 
-The second path is deliberately a robot-motion-only dry run. It cannot trigger an OCT acquisition, command a laser, or execute an MPPI action on hardware.
+The second workflow is implemented and disabled by default. It has no current calibration data or live-device qualification. Software presence does not authorize physical motion or emission.
 
-## What is in this repository
+## Repository contents
 
-- `mppi/`: exact copied MPPI runtime source and configuration authority.
-- `assets/ur5e/`: collaborator-supplied UR5e URDF and its referenced mesh assets.
-- `simulation/`: PyBullet-only MPPI workflow, virtual ablation, and interaction preview. Its isolation guard blocks RTDE, OCT, laser, and all non-local socket access.
-- `src/alo_rats_hardware/`: strict processed-OCT importer, task-designation UI, RTDE state/safe-motion client, and dry-run entry point.
-- `config/site.example.yaml`: the only device-specific configuration template. `config/site.yaml` is local and Git-ignored.
+- `mppi/`: copied MPPI runtime and exact method configuration; numerical source/configuration remain unchanged.
+- `assets/ur5e/`: collaborator-supplied UR5e URDF and referenced meshes.
+- `simulation/`: PyBullet-only workflow with virtual ablation and explicit non-local device isolation.
+- `src/alo_rats_hardware/oct_folder.py`: stable mounted-folder import, parallel B-scan processing, height-field reconstruction, registration, and processed-volume output.
+- `src/alo_rats_hardware/robot.py`: RTDE state, safety/IK checks, action motion, endpoint measurement, and scan-pose return.
+- `src/alo_rats_hardware/laser.py`: one-JSON-per-connection Raspberry Pi PWM client with energy calibration and stopped-state verification.
+- `src/alo_rats_hardware/hardware_experiment.py`: experiment 2/3 operator-approved coordinator and terminal evidence.
+- `config/site.example.yaml`, `config/experiment_2.example.yaml`, and `config/experiment_3.example.yaml`: strict placeholder templates that reject physical execution until completed.
 
-The repository intentionally excludes the old Git histories, datasets, artifacts, raw OCT acquisition software, Nd:YAG/PWM control code, and hardware results.
+The repository excludes raw OCT drivers, the Raspberry Pi TCP listener, calibration measurements, hardware results, datasets, and old Git history.
 
-## Validation completed on the development machine
+## Validation completed on 2026-09-08
 
-- `92 passed` on the detected development-machine backend, including CPU/1-GPU/4-GPU/8-GPU profile-selection contracts.
-- The supplied URDF loaded in headless PyBullet with all 15 required URDF/mesh assets.
-- The nominal processed-OCT fixture passed the strict volumetric interchange loader.
-- The hardware command-line entry point imports without loading RTDE until an explicit connection request.
+- `103 passed` with global pytest plugins disabled and the system C++ runtime preloaded.
+- The supplied URDF loads with all required mesh assets.
+- Processed-OCT fixtures satisfy the strict interchange loader.
+- A generated B-scan folder converts deterministically to registered occupancy.
+- The loopback PWM server observes `start`, `set_pwm`, `stop`, and `status` in order and verifies interpolation.
+- Fake RTDE interfaces verify inverse-kinematics, safety, motion, measured-endpoint, and beam-error logic.
+- The physical entry point imports without contacting hardware.
 
-These results establish software packaging and no-device behavior only. They do not establish physical registration, focus, safe motion, OCT acquisition, laser delivery, or tissue outcome.
+These results establish offline software behavior. They do not establish the active OCT preset, physical registration, laboratory obstacle clearance, live Raspberry Pi replies/watchdog, focus, energy delivery, or tissue outcome.
 
-## Prepare the destination computer
+The host reports `/mnt/OCT_Data` as a read-only CIFS mount from `//192.168.1.2/OCT_Data`. Directory and `stat` requests did not return within five seconds during the current audit, so no scan folder was inspected. `config/site.yaml` is absent.
 
-1. Clone or unpack this repository in a user-writable directory.
-2. Create the declared environment and install both editable packages:
+## Destination computer preparation
 
-   ```bash
-   cd /path/to/ALO-RATS-Hardware
-   conda env create -f environment.yml
-   conda activate alo-rats-hardware
-   python -m pip install -e ./mppi -e .
-   ```
+```bash
+cd /path/to/ALO-RATS-Hardware
+/home/rp/anaconda3/bin/python3.12 -m venv .venv
+.venv/bin/python -m pip install --upgrade pip
+.venv/bin/python -m pip install pybullet==3.2.7 pyvista==0.48.4
+.venv/bin/python -m pip install -e ./mppi -e '.[robot,test]'
+PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 \
+LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libstdc++.so.6 \
+  .venv/bin/python -m pytest -q
+```
 
-   On Windows PowerShell, use `python -m pip install -e .\mppi -e .`; the editable installation is required even when the Conda environment already exists.
+The current host uses Python 3.12.4, NumPy 1.26.4, JAX 0.4.38, SciPy 1.13.1, OpenCV 4.11.0.86, and PyBullet 3.2.7. `environment.yml` and both package metadata files preserve the supported constraints. Verify RTDE separately:
 
-3. Run the no-device checks from a desktop login session:
+```bash
+.venv/bin/python -c "import rtde_control, rtde_receive; print('RTDE OK')"
+```
 
-   ```bash
-   mkdir -p outputs
-   check_root=$(mktemp -d "$PWD/outputs/checks.XXXXXX")
-   python simulation/check_robot_scene.py --output-dir "$check_root/robot_scene"
-   python scripts/create_nominal_oct_fixture.py --output "$check_root/nominal_processed_oct.npz"
-   python -m pytest -q --basetemp "$check_root/pytest" tests simulation/test_scan_adapter.py simulation/test_robot_executor.py
-   ```
+GPU execution must occur outside the sandbox. Require the expected eight JAX devices before a physical experiment; the coordinator records the devices and selects the existing matching compute profile.
 
-   In Windows PowerShell, create `$check_root` under `outputs`, pass `(Join-Path $check_root "robot_scene")` to `simulation\check_robot_scene.py --output-dir`, and pass `(Join-Path $check_root "pytest")` to pytest with `--basetemp`. The full PowerShell block is in the repository README and experiment runbook.
+## Current use
 
-4. For the UR5e dry run, copy `config/site.example.yaml` to `config/site.yaml`, then replace every value with laboratory-verified values. The copied endpoint and joint pose are historical values from the collaborator script, not a calibration certificate.
-5. Verify the hardware machine can import the RTDE modules:
-
-   ```bash
-   python -c "import rtde_control, rtde_receive; print('RTDE OK')"
-   ```
-
-6. Preserve the environment inventory and unavailable-device evidence before any integration work:
-
-   ```bash
-   python -m pip freeze > hardware-python-packages.txt
-   python -c "from oct.module_oct_vol_scan import oct_raster_scan; print('OCT trigger OK')"
-   ```
-
-The final OCT command is expected to fail with this repository alone. A successful import identifies that the missing scanner trigger has been recovered from the original hardware setup.
-
-## How to use the current deliverable
-
-### Nominal PyBullet MPPI demonstration
+### Simulation
 
 ```bash
 demo_root=$(mktemp -d /tmp/alo-rats-simulation.XXXXXX)
-python simulation/run_simulation.py \
+.venv/bin/python -m simulation.paths.run_simulation \
   --case compact_diagnostic --output-dir "$demo_root/run"
 ```
 
-Approve the displayed geometry, then focus the PyBullet window and press Enter. JAX automatically uses its detected default backend and the matching configured MPPI compute profile; `method.json` records both. This runs one process: designation, MPPI planning, checked URDF motion, virtual ablation, synthetic volumetric observation, and replanning. The compact diagnostic intentionally fails its frozen treatment-acceptance gate, so a nonzero exit is expected after `acceptance.json` is written.
+This is a virtual workflow. The simulation isolation layer rejects RTDE, OCT, laser modules, and non-local socket connections.
 
-### Processed-OCT plus robot dry run
-
-The input must meet [the processed-OCT contract](PROCESSED_OCT_CONTRACT.md): a fully segmented, registered 0.1 mm Boolean occupancy volume in `.npz` format. Raw OCT image folders, point clouds, and surface-only observations are rejected.
+### Processed-OCT robot dry run
 
 ```bash
-python scripts/run_hardware_dry_run.py \
+.venv/bin/python scripts/run_hardware_dry_run.py \
   --site config/site.yaml \
   --scan /path/to/processed_oct_volume.npz \
   --output-dir outputs/dry_run_001
 ```
 
-The operator uses the mouse-driven window to designate target and protected geometry. After approval, the program records the method identity, opens RTDE, records measured joints/TCP, writes evidence, and disconnects. It sends no motion by default. `--move-safe-pose` is an explicit opt-in that sends only the reviewed six-joint safe pose from `config/site.yaml`.
+The input follows [`PROCESSED_OCT_CONTRACT.md`](PROCESSED_OCT_CONTRACT.md). The command records RTDE state and sends no motion unless the operator supplies `--move-safe-pose`. It does not import or call the laser client.
 
-## Device-interface evidence and compatibility
+### Physical experiment entry point
 
-### UR5e
+```bash
+.venv/bin/python -m alo_rats_hardware.hardware_experiment \
+  --site config/site.yaml \
+  --experiment 2 \
+  --metadata config/experiment_2.yaml \
+  --output-dir outputs/experiment_2_001
+```
 
-The collaborator repository uses `rtde_control.RTDEControlInterface` and `rtde_receive.RTDEReceiveInterface` for `moveJ`, `servoJ`, joint state, and TCP state. This repository uses the same RTDE interfaces only for inspection and the opt-in safe `moveJ`. It should be compatible once `ur-rtde`, network routing, robot firmware, endpoint, and the approved pose are verified on the destination machine.
+This command fails before hardware connection when physical execution is disabled or any required calibration/metadata value is missing. Follow [`0-OPERATOR_RUNBOOK.md`](0-OPERATOR_RUNBOOK.md); do not enable it before every earlier success flag is recorded.
+
+## Correct interface provenance
 
 ### OCT
 
-The collaborator calibration script calls `oct.module_oct_vol_scan.oct_raster_scan().start_oct_scan(...)`. That module is absent from the checked-in robot repository. Its own comments state that OCT scans are acquired and processed on another OCT computer, then transferred to the robot-side workflow. The checkout also contains a Lumedica serial-command PDF and offline Open3D/OpenCV-based utilities, but not a complete usable scanner driver.
-
-Therefore this delivery is compatible with the **processed OCT output**, not automatically with the scanner-control software. Recover the missing trigger module and its Lumedica/serial configuration, then implement a reviewed acquisition-and-segmentation adapter that writes the declared volume contract.
+`hybrid_arm_mirror` is the OCT reference tree. Its `oct/` serial files document `SetSampleName`, `StartCapture VolumeScan`, and `SaveQueueImages`; its folder-processing files document B-scan ordering, filtering, surface extraction, pixel scaling, and transform intent. Root-level `oct_calib.py`, `laser_oct_world.py`, and `test_oct.py` add hand-eye estimation, scan-pose/filename recording, and multi-scan stitching evidence. The active apparatus uses the Windows Lumedica application and mounted Ubuntu share, so ALO-RATS uses the folder output and sends no scanner command. Historical transforms conflict and are excluded from the example calibration.
 
 ### Laser
 
-The collaborator script calls a laser helper that connects by TCP socket to a separate PWM service. The old checkout also contains Raspberry Pi GPIO PWM code. That implies an additional reachable PWM server and likely a Raspberry Pi-specific software environment. This repository intentionally excludes all of those modules. It cannot fire a laser and is not compatible with the laser device without a new, separately reviewed safety implementation.
+`see_plan_cut/ndyag_laser_control/` is the Raspberry Pi deployment-code reference. Its client files use one JSON request per TCP connection, actions `start`, `set_pwm`, `stop`, and `status`, and historical endpoint `10.194.210.35:8000`. The downloaded folder contains direct GPIO code and TCP clients but no listener implementation. The live service's response schema and independent watchdog therefore remain required audit inputs.
 
-## Work still required before physical cutting
+### Robot
 
-1. Recover and validate live OCT triggering and the raw-scan segmentation pipeline.
-2. Measure and version OCT-to-robot/planning registration, including scan pose and treatment-frame authority.
-3. Add a hardware executor that maps an MPPI action to a calibrated beam pose, performs collision/keep-out preflight, and records achieved robot state.
-4. Validate focus/standoff, optical-axis convention, and physical energy-to-PWM response on suitable phantoms.
-5. Add reviewed laser interlocks, emergency-stop behavior, arm/disarm state, bounded pulse commands, and an execution receipt.
-6. Reacquire, segment, register, and validate OCT after every physical pulse before allowing the controller session to advance.
-7. Complete phantom and tissue validation before any live cutting demonstration.
+The physical executor uses the same ur-rtde control/receive interfaces as the collaborator workflow. It checks the requested pose and IK joints against the active UR safety configuration, limits total joint change, verifies final scan/safe-pose joint error, executes `moveJ`, and validates the measured beam endpoint. External laboratory objects are not represented in the physical executor; active UR safety planes and inert-motion qualification must cover them.
 
-No current software test or simulation result authorizes those physical actions.
+## Remaining work before experiments
+
+1. Record `LIVE_INTERFACES_IDENTIFIED` from the mounted share, live Pi service, UR installation, watchdog, and calibration audit.
+2. Validate at least three recorded Lumedica folders and record `OCT_FOLDER_TO_VOLUME_PASS`.
+3. Execute inert scan/treatment/return paths and record `ROBOT_ACTION_AND_RETURN_PASS`.
+4. Validate the Pi with power disabled, then measure a beam-dump energy table and record `LASER_BOUNDED_PULSE_PASS`.
+5. Complete failure-injected replay and one physical cycle; record `COORDINATOR_REPLAY_PASS` and `ONE_PHYSICAL_CYCLE_PASS`.
+6. Run experiment 2, review its complete evidence, then run experiment 3.
+
+The detailed acceptance conditions are in [`OCT_LASER_EXPERIMENT_2_3_PLAN.md`](OCT_LASER_EXPERIMENT_2_3_PLAN.md).
+
+## Reference source map
+
+- OCT: [`../../hybrid_arm_mirror/oct/`](../../hybrid_arm_mirror/oct/).
+- Raspberry Pi laser: [`../../see_plan_cut/ndyag_laser_control/`](../../see_plan_cut/ndyag_laser_control/).
+- Historical integrated robot/laser sequence: [`../../see_plan_cut/planned_cut_execute.py`](../../see_plan_cut/planned_cut_execute.py).
+
+These sources define historical behavior; they do not qualify the active apparatus.

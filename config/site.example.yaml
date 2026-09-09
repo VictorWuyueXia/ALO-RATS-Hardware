@@ -1,5 +1,57 @@
-# Copy to config/site.yaml and enter only the laboratory's verified robot endpoint and safe pose.
-robot_ip: 192.168.1.103
-safe_joint_pose_rad: [1.610071, -1.041262, 1.274265, -3.389604, -1.140393, 1.535890]
-move_speed_rad_s: 0.10
-move_acceleration_rad_s2: 2.0
+# Copy to config/site.yaml and replace every calibration placeholder before qualification.
+physical_execution_enabled: false
+robot:
+  ip: 192.168.1.103
+  safe_joint_pose_rad: [1.610071, -1.041262, 1.274265, -3.389604, -1.140393, 1.535890]
+  scan_joint_pose_rad: [1.610071, -1.041262, 1.274265, -3.389604, -1.140393, 1.535890]
+  move_speed_rad_s: 0.10
+  move_acceleration_rad_s2: 2.0
+  maximum_joint_delta_rad: 1.0
+  maximum_joint_error_rad: 0.005
+registration:
+  calibration_id: REPLACE_WITH_MEASURED_REGISTRATION_ID
+  base_from_planning_m:
+    - [1.0, 0.0, 0.0, 0.0]
+    - [0.0, 1.0, 0.0, 0.0]
+    - [0.0, 0.0, 1.0, 0.0]
+    - [0.0, 0.0, 0.0, 1.0]
+  tcp_from_oct_m:
+    - [1.0, 0.0, 0.0, 0.0]
+    - [0.0, 1.0, 0.0, 0.0]
+    - [0.0, 0.0, 1.0, 0.0]
+    - [0.0, 0.0, 0.0, 1.0]
+  tcp_from_laser_m:
+    - [1.0, 0.0, 0.0, 0.0]
+    - [0.0, 1.0, 0.0, 0.0]
+    - [0.0, 0.0, 1.0, 0.0]
+    - [0.0, 0.0, 0.0, 1.0]
+  laser_standoff_m: 0.040
+  maximum_intercept_error_mm: 0.025
+  maximum_axis_error_rad: 0.001
+oct:
+  shared_root: /mnt/OCT_Data  # Detected read-only CIFS mount; verify responsiveness before use.
+  file_pattern: "*.tif"
+  expected_b_scans: 128
+  image_shape_px: [512, 512]
+  pixel_spacing_lateral_scan_depth_mm: [0.028, 0.11173, 0.01459]
+  axis_order: [0, 1, 2]
+  axis_signs: [1, 1, 1]
+  surface_margin_px: 30
+  surface_threshold_u8: 80
+  planning_volume_bounds_mm: [[-2.8, 2.8], [-2.8, 2.8], [-8.0, 0.6]]
+  planning_frame_id: REPLACE_WITH_PLANNING_FRAME_ID
+  stable_observations: 3
+  poll_interval_s: 1.0
+  scan_timeout_s: 180.0
+laser:
+  host: 10.194.210.35
+  port: 8000
+  timeout_s: 5.0
+  frequency_hz: 100.0
+  pulse_duration_s: 1.5
+  startup_delay_s: 0.2
+  energy_to_duty_cycle: []
+  status_key: REPLACE_AFTER_PI_AUDIT
+  stopped_value: REPLACE_AFTER_PI_AUDIT
+  watchdog_qualified: false
+  calibration_id: REPLACE_WITH_MEASURED_ENERGY_CALIBRATION_ID

@@ -2,9 +2,11 @@
 
 import ast
 import inspect
+from pathlib import Path
 
 import numpy as np
 import pytest
+import yaml
 
 from alo_rats_hardware.designation import default_designation
 from alo_rats_hardware.processed_oct import load_processed_volume
@@ -62,5 +64,7 @@ def test_rtde_is_imported_only_when_connecting():
 
 def test_site_configuration_rejects_unapproved_motion_values():
     """A hardware motion request requires all six explicit approved joint coordinates."""
+    values = yaml.safe_load((Path(__file__).parents[1] / "config/site.example.yaml").read_text())
+    values["robot"]["safe_joint_pose_rad"] = np.zeros(5)
     with pytest.raises(ValueError, match="six finite"):
-        SiteConfiguration("192.168.1.103", np.zeros(5), 0.1, 2.0)
+        SiteConfiguration(**values)
