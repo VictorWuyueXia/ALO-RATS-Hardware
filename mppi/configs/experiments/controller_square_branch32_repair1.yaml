@@ -9,7 +9,7 @@ shared_configs:
   energy_mpc: configs/experiments/energy_mpc_casadi_v1.yaml
 alignment_persistence: 3
 periodic_repair_pulses: 1
-maximum_pulses: 400
+maximum_pulses: 64
 maximum_repairs_per_prefix: 1
 mppi:
   max_anchors: 4
@@ -21,8 +21,8 @@ mppi:
   lambda_overcut: 0.40
   lambda_anchor: 0.0
   temperature: 0.05
-  segment_minimum_pulses: 20
-  segment_maximum_count: 5
+  segment_length_pulses: 10
+  segment_minimum_pulses: 1
   segment_retain_fraction: 0.20
   device_memory_cap_gib: 8.0
   segment_working_pool_gib: 1.0

@@ -110,8 +110,8 @@ class MPPIRepairConfig:
     lambda_overcut: float = 0.40
     lambda_anchor: float = 0.0
     temperature: float = 0.025
-    segment_minimum_pulses: int = 10
-    segment_maximum_count: int = 5
+    segment_length_pulses: int = 10
+    segment_minimum_pulses: int = 1
     segment_retain_fraction: float = 0.20
     device_memory_cap_gib: float = 8.0
     segment_working_pool_gib: float = 1.0
@@ -141,8 +141,10 @@ class MPPIRepairConfig:
             raise ValueError("MPPI objective weights must sum to one")
         if self.temperature <= 0.0:
             raise ValueError("MPPI temperature must be positive")
-        if self.segment_minimum_pulses <= 0 or self.segment_maximum_count <= 0:
-            raise ValueError("segment pulse length and count must be positive")
+        if self.segment_length_pulses <= 0 or self.segment_minimum_pulses <= 0:
+            raise ValueError("segment lengths must be positive")
+        if self.segment_minimum_pulses > self.segment_length_pulses:
+            raise ValueError("segment minimum cannot exceed the fixed segment length")
         if not 0.0 < self.segment_retain_fraction <= 1.0:
             raise ValueError("segment retain fraction must lie in (0, 1]")
         if self.device_memory_cap_gib <= 0.0:
@@ -155,6 +157,12 @@ class MPPIRepairConfig:
             raise ValueError("ROI linearization cosine threshold must lie in [-1, 1]")
         if self.roi_match_cosine_min > self.roi_linearization_cosine_min:
             raise ValueError("ROI match cosine threshold must not exceed linearization threshold")
+
+    def segment_count(self, maximum_pulses: int) -> int:
+        """Return the number of fixed-length segments required by one action horizon."""
+        if maximum_pulses <= 0:
+            raise ValueError("maximum pulses must be positive")
+        return (maximum_pulses + self.segment_length_pulses - 1) // self.segment_length_pulses
 
 
 @dataclass(frozen=True)

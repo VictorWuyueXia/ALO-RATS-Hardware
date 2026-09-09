@@ -27,6 +27,10 @@ def test_method_matches_the_detected_jax_device_layout(
     assert method.mppi.rollout_batch_size == rollout_batch_size
     assert method.mppi.max_anchors == 10
     assert method.mppi.samples_per_anchor == 512
+    assert method.maximum_pulses == 64
+    assert method.mppi.segment_length_pulses == 10
+    assert method.mppi.segment_minimum_pulses == 1
+    assert method.mppi.segment_count(method.maximum_pulses) == 7
 
 
 def test_method_rejects_an_unconfigured_jax_device_layout():

@@ -119,7 +119,7 @@ def rollout_terminal_in_batches(
     devices: tuple[object, ...],
     initial_rows: np.ndarray | None = None,
 ) -> TerminalRolloutBatch:
-    """Roll exact per-row initial states through fixed-width actions without state traces."""
+    """Roll exact per-row initial states through fixed-width GPU batches without state traces."""
     import jax.numpy as jnp
 
     initial = np.asarray(initial_sdf, np.float32)
@@ -149,8 +149,8 @@ def rollout_terminal_in_batches(
         _EXECUTORS[key] = executor
 
     parts: list[tuple[np.ndarray, ...]] = []
-    shard_count = (len(action_values) + batch_size - 1) // batch_size
-    for shard_index, start in enumerate(range(0, len(action_values), batch_size), start=1):
+    batch_count = (len(action_values) + batch_size - 1) // batch_size
+    for batch_index, start in enumerate(range(0, len(action_values), batch_size), start=1):
         stop = min(start + batch_size, len(action_values))
         count = stop - start
         packed_initial = np.broadcast_to(task.initial_current_sdf, (batch_size,) + task.shape).copy()
@@ -169,7 +169,7 @@ def rollout_terminal_in_batches(
         )
         parts.append(tuple(np.asarray(value[:count]) for value in values))
         del values
-        print(f"rollout kind=terminal shard={shard_index}/{shard_count} rows=[{start},{stop})", flush=True)
+        print(f"rollout kind=terminal batch={batch_index}/{batch_count} rows=[{start},{stop})", flush=True)
 
     combined = tuple(np.concatenate([part[index] for part in parts]) for index in range(8))
     states, remaining, overcut, healthy, clearance, pulses, energy, flag_values = combined

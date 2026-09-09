@@ -143,10 +143,11 @@ class MPPIPlanRepairer:
         microbatch_size = self.config.rollout_batch_size
         started = perf_counter()
         summaries: list[RepairIterationSummary] = []
-        for stage in range(self.config.segment_maximum_count):
+        segment_count = self.config.segment_count(beam.maximum_pulses)
+        for stage in range(segment_count):
             beam = state.beam
             starts, stops, unfinished = beam.segment_bounds(
-                stage, self.config.segment_minimum_pulses, self.config.segment_maximum_count,
+                stage, self.config.segment_length_pulses, self.config.segment_minimum_pulses,
             )
             if not np.any(unfinished):
                 break
@@ -197,7 +198,7 @@ class MPPIPlanRepairer:
                     weighted_verification_seconds=float(stats["weighted_verification_seconds"]),
                 ))
                 print(
-                    f"path-integral segment={stage + 1}/{self.config.segment_maximum_count} "
+                    f"path-integral segment={stage + 1}/{segment_count} "
                     f"refinement={refinement + 1}/{self.config.iterations} "
                     f"children={stats['child_count']} weighted_parents={stats['weighted_parent_count']} "
                     f"retained={retained_count}/{capacity_records}", flush=True,

@@ -12,7 +12,7 @@ native_3d:
     - [0.075, 0.25]
     - [0.025, 0.125]
   coverage_pitches_mm: [0.6, 0.9]
-  maximum_pulses: 160
+  maximum_pulses: 64
   maximum_candidates: 300
   maximum_repeats_per_anchor: 6
   energy_fractions: [0.82, 0.20, 1.00, 0.60, 0.08, 0.40]

@@ -35,11 +35,7 @@ def stream_path_integral_segment(
         raise ValueError("path-integral segments must begin at each cached boundary")
 
     sample_count = executor.config.samples_per_anchor
-    width = max(
-        executor.config.segment_minimum_pulses,
-        (beam.maximum_pulses + executor.config.segment_maximum_count - 1)
-        // executor.config.segment_maximum_count,
-    )
+    width = executor.config.segment_length_pulses
     pulse = np.arange(beam.maximum_pulses, dtype=np.int32)[None]
     perturb_mask = (pulse >= starts[:, None]) & (pulse < stops[:, None]) & beam.action_mask
     sampled_at = perf_counter()

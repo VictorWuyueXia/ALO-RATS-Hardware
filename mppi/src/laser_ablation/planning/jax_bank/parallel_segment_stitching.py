@@ -25,10 +25,10 @@ def propose_parallel_stitched_segments(
         raise ValueError("parallel segment microbatch size must be positive")
     lengths = np.count_nonzero(beam.action_mask, axis=1).astype(np.int32)
     row_data: list[tuple[int, int, int, int]] = []
-    for stage in range(executor.config.segment_maximum_count):
+    for stage in range(executor.config.segment_count(beam.maximum_pulses)):
         starts, stops, active = beam.segment_bounds(
-            stage, executor.config.segment_minimum_pulses,
-            executor.config.segment_maximum_count,
+            stage, executor.config.segment_length_pulses,
+            executor.config.segment_minimum_pulses,
         )
         for parent in np.flatnonzero(active):
             row_data.append((int(parent), stage, int(starts[parent]), int(stops[parent])))

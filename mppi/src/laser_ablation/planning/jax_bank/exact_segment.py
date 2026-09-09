@@ -93,11 +93,7 @@ def stream_exact_segment(
         raise ValueError("exact segment parents must start at their cached boundary")
 
     samples_per_parent = executor.config.samples_per_anchor
-    segment_width = max(
-        executor.config.segment_minimum_pulses,
-        (beam.maximum_pulses + executor.config.segment_maximum_count - 1)
-        // executor.config.segment_maximum_count,
-    )
+    segment_width = executor.config.segment_length_pulses
     retained: list[tuple[tuple[float, float, str], tuple[object, ...]]] = []
     rejection_counts: dict[str, int] = {}
     sampling_seconds = segment_seconds = suffix_seconds = ranking_seconds = 0.0
