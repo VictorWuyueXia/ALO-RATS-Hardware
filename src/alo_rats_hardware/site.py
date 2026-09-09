@@ -99,8 +99,7 @@ class SiteConfiguration:
         if (not laser["host"] or not 0 < laser["port"] < 65536
                 or min(laser["timeout_s"], laser["frequency_hz"], laser["pulse_duration_s"]) <= 0
                 or laser["frequency_hz"] > 290 or laser["startup_delay_s"] < 0
-                or not laser["status_key"] or not isinstance(laser["watchdog_qualified"], bool)
-                or not laser["calibration_id"]
+                or not isinstance(laser["watchdog_qualified"], bool)
                 or table.ndim != 2 or table.shape[1] != 2 or np.any(~np.isfinite(table))
                 or (len(table) and (np.any(np.diff(table[:, 0]) <= 0)
                                     or np.any(table[:, 1] <= 0) or np.any(table[:, 1] > 99)))):
@@ -112,6 +111,8 @@ class SiteConfiguration:
         )
         if self.physical_execution_enabled and (
                 len(table) < 2 or not laser["watchdog_qualified"]
+                or not laser["status_key"] or laser["stopped_value"] is None
+                or laser["stopped_value"] == "" or not laser["calibration_id"]
                 or any("REPLACE" in str(value) for value in placeholder_values)):
             raise ValueError(
                 "Physical execution requires measured identifiers, energy calibration, and pulse watchdog")

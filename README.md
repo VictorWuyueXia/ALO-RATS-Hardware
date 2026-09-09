@@ -49,13 +49,13 @@ On an Ubuntu NVIDIA workstation, install the CUDA-enabled JAX wheel and verify t
 
 ```bash
 nvidia-smi
-.venv/bin/python -m pip install --upgrade "jax[cuda13]"
+.venv/bin/python -m pip install --upgrade "jax[cuda12-pip]==0.4.38"
 .venv/bin/python -c "import jax; print('backend:', jax.default_backend()); print('devices:', jax.devices())"
 ```
 
 The backend must print `gpu` before starting an experiment. The simulation uses exactly the first CUDA device and the baseline `1gpu` MPPI profile; a CPU-only JAX installation uses the declared `cpu` test profile. Native Windows JAX does not support NVIDIA CUDA, so PowerShell runs use the CPU backend; use the Ubuntu robot workstation or WSL2 for baseline-profile execution. PyBullet may use the graphics GPU for OpenGL display, but its rigid-body and inverse-kinematics computations remain CPU-side.
 
-The repository snapshot passed 103 no-device tests on the development machine. The checks validate the processed-OCT contract, mounted-folder conversion, PWM exchange, RTDE action checks, URDF asset closure, PyBullet interaction, controller/session interfaces, automatic compute-profile selection, and simulation isolation. They do not qualify the active scanner preset, robot installation, Raspberry Pi service, pulse cutoff, laser energy, or tissue outcome.
+The repository snapshot passed 105 no-device tests on the development machine. The checks validate the processed-OCT contract, mounted-folder conversion, PWM exchange, RTDE action checks, URDF asset closure, PyBullet interaction, controller/session interfaces, automatic compute-profile selection, and simulation isolation. They do not qualify the active scanner preset, robot installation, Raspberry Pi service, pulse cutoff, laser energy, or tissue outcome.
 
 ## Robot and processed-OCT dry run
 

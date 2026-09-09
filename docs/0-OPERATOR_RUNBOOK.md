@@ -15,9 +15,9 @@ Readiness on 2026-09-08:
 | Pulse/OCT feedback coordinator | Implemented and import-tested | Complete replay and one-cycle qualification remain pending |
 | Experiments 2 and 3 | Entry point implemented | Blocked until every preceding success flag exists |
 
-The Lumedica Windows application owns acquisition. Ubuntu reads a mounted folder. Do not run the historical scanner serial code. `config/site.example.yaml` has `physical_execution_enabled: false` and contains deliberate placeholders, so it cannot emit a pulse.
+The Lumedica Windows application owns acquisition. Ubuntu reads a mounted folder. Do not run the historical scanner serial code. `config/site.yaml` carries the fixed Experiment 2 geometry transferred from `see_plan_cut`; `physical_execution_enabled: false` prevents emission.
 
-Current host observation: `/mnt/OCT_Data` is mounted read-only from `//192.168.1.2/OCT_Data`, but directory and `stat` requests did not return within five seconds during the 2026-09-08 audit. Restore responsive access before OCT qualification. `config/site.yaml` is currently absent.
+Current host observation: `/mnt/OCT_Data` is mounted read-only from `//192.168.1.2/OCT_Data`, but directory and `stat` requests did not return within five seconds during the 2026-09-08 audit. Restore responsive access before OCT qualification.
 
 ## 1. Immediate stop conditions
 
@@ -52,29 +52,71 @@ LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libstdc++.so.6 \
   .venv/bin/python -m pytest -q
 ```
 
-The current reference result is `103 passed`. Require zero failures. `environment.yml`, `pyproject.toml`, and `mppi/pyproject.toml` hold the portable dependency constraints.
+The current reference result is `105 passed`. Require zero failures. `environment.yml`, `pyproject.toml`, and `mppi/pyproject.toml` hold the portable dependency constraints.
 
-For experiment execution, request an outside-sandbox run and verify the expected eight GPUs:
+For experiment execution, request an outside-sandbox run and verify the expected first CUDA device:
 
 ```bash
 nvidia-smi
+.venv/bin/python -m pip install --upgrade "jax[cuda12-pip]==0.4.38"
 LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libstdc++.so.6 \
   .venv/bin/python -c "import jax; print(jax.default_backend()); print(jax.devices())"
 ```
 
-Require backend `gpu` and eight devices. The coordinator records the detected devices and selects the matching existing MPPI compute profile.
+Require backend `gpu` and device `0`. The coordinator selects the baseline `1gpu` profile and records the detected device list.
 
-## 3. Complete the live-interface audit
+## 3. Fixed reference parameters and live-interface audit
 
-Create a unique audit directory under `outputs/` and record:
+`config/site.yaml` contains the fixed parameters recovered from the prior Experiment 2 execution. The source chain is `see_plan_cut/planned_cut_execute.py`, `see_plan_cut/utils/UR5Controller.py`, and `see_plan_cut/robots/urdf/ur5e_fixed.urdf`:
 
-1. Restore responsive access to `/mnt/OCT_Data`; then record mount options, available space, Windows host, Lumedica preset, file pattern, B-scan count, image shape, and one untouched folder hash manifest.
-2. One acquisition in the Windows application that creates exactly one new complete folder visible on Ubuntu.
-3. UR5e address, firmware, remote-control state, active TCP definition, safety planes, scan joint pose, safe joint pose, maximum approved total joint change, and maximum accepted final joint error.
-4. Raspberry Pi address, port, service name, service startup/shutdown process, and source/version actually running.
-5. With laser power disabled, exact JSON replies to `stop` and `status`. The downloaded `ndyag_laser_control` folder contains no TCP listener, so inspect the running service rather than inferring replies.
-6. An independent hardware pulse cutoff. Pulse duration controlled solely by a later Ubuntu `stop` command is unacceptable.
-7. Measured planning/base, OCT/TCP, and laser/TCP transforms; laser standoff; five-scan OCT repeatability; and power-meter energy/duty table. Record hashes, dates, equipment identifiers, and operators.
+- robot address, safe/scan pose, motion speed, and acceleration;
+- the planning-frame-to-base transform from the recorded Experiment 2 scan pose and tissue-frame transform;
+- TCP-to-OCT and TCP-to-laser transforms from the fixed URDF mount geometry;
+- OCT image count, image shape, spacing, Raspberry Pi address/port, and the 100 Hz, 1.5 s historical pulse setting.
+
+The following values are absent from both downloaded reference repositories. They must be read from the active equipment or its contemporaneous record before any physical laser experiment. They are unnecessary for the laser-free dry run.
+
+| Value | Exact acquisition operation | Configuration destination |
+| --- | --- | --- |
+| Raspberry Pi stopped-state field and value | With laser power disabled, send `status`, retain the full JSON reply, then identify the field whose value means output is stopped. | `laser.status_key`, `laser.stopped_value` |
+| Independent pulse cutoff | Interrupt Pi communication immediately after a nonemitting or beam-dump qualification command and observe the independent cutoff. | `laser.watchdog_qualified` |
+| Duty-to-energy table | Record five beam-dump power-meter traces at each selected duty cycle and integrate each trace. For a trace with power $P(t)$ in watts at time $t$ in seconds, emitted energy is $$E = \int P(t)\,dt,$$ where $E$ is joules. | `laser.energy_to_duty_cycle`, `laser.calibration_id` |
+| OCT repeatability | Acquire five unchanged registered volumes and calculate the occupied-voxel exclusive-or volume for every repeat pair. Use the largest value in cubic millimetres. | `oct_repeatability_xor_mm3` in experiment metadata |
+| Experiment identity | Read the phantom label, formulation, batch, preparation record, operators, and laser safety approval from the experiment record. | `config/experiment_2.yaml` and `config/experiment_3.yaml` |
+
+Create a unique audit directory and perform the following operations in order:
+
+```bash
+audit_dir="$PWD/outputs/live-interface-audit-$(date +%Y%m%d-%H%M%S)"
+mkdir -p "$audit_dir"
+findmnt /mnt/OCT_Data | tee "$audit_dir/oct_mount.txt"
+```
+
+1. Restore responsive access to `/mnt/OCT_Data`. Record mount options, free space, Windows host, Lumedica preset, file pattern, B-scan count, image shape, and one untouched folder hash manifest in `$audit_dir`.
+2. In the Windows Lumedica application, create one acquisition. On Ubuntu, confirm exactly one new complete folder and its contiguous B-scan indices.
+3. On the UR pendant, record firmware, remote-control state, active TCP definition, safety planes, and the approved joint/error limits. The fixed geometry in `config/site.yaml` assumes the legacy URDF definition that `tool0` is the all-zero TCP frame.
+4. On the Raspberry Pi, record the deployed service name and revision. With laser power disabled, run this nonemitting status query and save its exact reply:
+
+```bash
+.venv/bin/python - <<'PY' | tee "$audit_dir/pi_status.json"
+import json
+import socket
+
+with socket.create_connection(("10.194.210.35", 8000), timeout=5) as connection:
+    connection.sendall(json.dumps({"action": "status"}).encode("utf-8"))
+    print(connection.recv(1024).decode("utf-8"))
+PY
+```
+
+5. With the beam terminated in a beam dump and robot motion disabled, collect five power-meter traces for each selected duty cycle. The legacy analysis program expects `Power_<duty>/time_<seconds>.txt` folders under its `input_dir`; run it after placing the traces there:
+
+```bash
+.venv/bin/python ../see_plan_cut/analysis/laser_power_repetability.py
+```
+
+Copy two or more strictly increasing `mean_energy_J,duty_cycle` pairs from `per_instance_summary.csv` into `laser.energy_to_duty_cycle`.
+6. Perform the independent-cutoff test. Set `watchdog_qualified: true` only after the cutoff stops output without a later Ubuntu command.
+7. Acquire five unchanged registered OCT volumes, calculate the repeatability value, and fill the experiment metadata identities from the experiment record.
 
 Write `LIVE_INTERFACES_IDENTIFIED` only when every value has direct evidence.
 
@@ -86,7 +128,7 @@ cp config/experiment_2.example.yaml config/experiment_2.yaml
 cp config/experiment_3.example.yaml config/experiment_3.yaml
 ```
 
-Replace every `REPLACE_...` value. Set OCT pixel spacing, axis order/signs, file pattern, count, shape, threshold, and planning bounds from the locked acquisition preset. Set `status_key` and `stopped_value` from the live reply. Fill at least two increasing energy/duty measurements. Set `watchdog_qualified: true` only after cutoff testing. Keep `physical_execution_enabled: false` through OCT, robot, and disabled-laser qualifications.
+Do not replace the transferred fixed geometry. Set `status_key` and `stopped_value` from the saved live reply. Fill at least two increasing energy/duty measurements. Set `watchdog_qualified: true` only after cutoff testing. Keep `physical_execution_enabled: false` through OCT, robot, and disabled-laser qualifications.
 
 Each experiment metadata file must name the run, phantom, exact formulation, batch, preparation time, operators, safety approval, matching calibration identifiers, positive five-scan repeatability, random seed, and planner raster settings. Placeholder text or zero repeatability is rejected.
 
@@ -116,7 +158,7 @@ run_dir="$PWD/outputs/hardware-dry-run-$(date +%Y%m%d-%H%M%S)"
 LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libstdc++.so.6 \
   .venv/bin/python scripts/run_hardware_dry_run.py \
   --site config/site.yaml \
-  --scan /absolute/path/to/processed_oct_volume.npz \
+  --scan /absolute/path/to/registered_processed_oct_volume.npz \
   --output-dir "$run_dir"
 ```
 
@@ -140,7 +182,7 @@ Then perform one qualified scan/motion/return/feedback-scan cycle with the laser
 
 After all prior flags, set `physical_execution_enabled: true`. The strict validator will still reject placeholders, unmatched calibration identifiers, an empty energy table, or an unqualified watchdog.
 
-## 9. Standard experiment command and pulse cycle
+## 9. Experiment 2 command and exact operator interaction
 
 ```bash
 run_dir="$PWD/outputs/experiment-2-$(date +%Y%m%d-%H%M%S)"
@@ -152,18 +194,18 @@ LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libstdc++.so.6 \
   --output-dir "$run_dir"
 ```
 
-The initial cycle is:
+Before this command, confirm the enclosure, interlock, emergency stop, beam dump state, fixed scan pose, mounted OCT path, and the zero-output Pi status. The command performs this exact interaction sequence:
 
 1. The program connects RTDE, verifies stopped laser status, and moves to the approved scan pose.
 2. The operator creates the initial volume in the Windows application and presses Enter.
-3. The adapter accepts the new folder; the operator designates and approves target and protected boundary.
-4. MPPI creates one request. The operator verifies the displayed identity and types the exact `MOVE <command_id>` text.
+3. The adapter accepts the new folder. In the designation window, drag each target footprint, set target depth and constraint depth in millimetres, inspect orange target and red protected voxels, then click **Approve / save**.
+4. MPPI creates one request. Verify its `command_id`, planned intercept, tilt, and energy against the displayed task. Type the exact `MOVE <command_id>` text.
 5. The executor moves, measures the endpoint, predicts removal from the achieved beam, and rejects no tissue removal or protected removal.
-6. The operator completes all hardware checks and types the exact `PULSE <command_id>` text.
+6. Confirm the measured endpoint, unchanged protected mask, clear enclosure, and enabled independent cutoff. Type the exact `PULSE <command_id>` text.
 7. The client executes the calibrated PWM sequence, verifies stopped state, and records the receipt.
 8. The robot returns to the scan pose. The operator inspects/cleans the window, creates a new volume, and presses Enter.
 9. The adapter requires a new content hash. `ControllerSession.update()` consumes the new observation exactly once.
-10. The cycle continues; the existing controller repairs its plan after every ten confirmed pulses.
+10. The cycle continues until `completion_gate`. The existing controller repairs its plan after every ten confirmed pulses. Stop immediately under any condition in Section 1; never type either approval string for an uncertain state.
 
 ## 10. Experiment 2 acceptance
 

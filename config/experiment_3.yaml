@@ -6,7 +6,7 @@ phantom_batch_id: 0
 phantom_preparation_time: 0
 operator_ids: [0]
 laser_safety_approval_id: 0
-registration_calibration_id: 0
+registration_calibration_id: "OCT_UR5E_REG_2026-09-08"
 laser_calibration_id: 0
 oct_repeatability_xor_mm3: 0.0  # Replace with the measured positive five-scan value.
 random_seed: 20260908

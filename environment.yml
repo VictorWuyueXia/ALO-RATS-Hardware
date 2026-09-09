@@ -12,7 +12,7 @@ dependencies:
   - pytest=9.1.1
   - line_profiler=5.0.2
   - pip:
-      - jax==0.4.38
+      - jax[cuda12-pip]==0.4.38
       - opencv-python-headless==4.11.0.86
       - pybullet==3.2.7
       - scipy==1.13.1

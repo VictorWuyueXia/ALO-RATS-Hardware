@@ -30,7 +30,7 @@ The repository excludes raw OCT drivers, the Raspberry Pi TCP listener, calibrat
 
 ## Validation completed on 2026-09-08
 
-- `103 passed` with global pytest plugins disabled and the system C++ runtime preloaded.
+- `105 passed` with global pytest plugins disabled and the system C++ runtime preloaded.
 - The supplied URDF loads with all required mesh assets.
 - Processed-OCT fixtures satisfy the strict interchange loader.
 - A generated B-scan folder converts deterministically to registered occupancy.
@@ -61,7 +61,7 @@ The current host uses Python 3.12.4, NumPy 1.26.4, JAX 0.4.38, SciPy 1.13.1, Ope
 .venv/bin/python -c "import rtde_control, rtde_receive; print('RTDE OK')"
 ```
 
-GPU execution must occur outside the sandbox. Require the expected eight JAX devices before a physical experiment; the coordinator records the devices and selects the existing matching compute profile.
+GPU execution must occur outside the sandbox. Require JAX backend `gpu` with device `0` before a physical experiment; the coordinator selects the baseline `1gpu` profile and records the detected device list.
 
 ## Current use
 

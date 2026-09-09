@@ -1,13 +1,13 @@
 experiment_number: 2
-experiment_run_id: REPLACE_WITH_UNIQUE_RUN_ID
-phantom_id: REPLACE_WITH_PHANTOM_ID
-phantom_formula: REPLACE_WITH_EXACT_FORMULATION
-phantom_batch_id: REPLACE_WITH_BATCH_ID
-phantom_preparation_time: REPLACE_WITH_ISO8601_TIME
-operator_ids: [REPLACE_WITH_OPERATOR_ID]
-laser_safety_approval_id: REPLACE_WITH_APPROVAL_ID
-registration_calibration_id: REPLACE_WITH_SITE_REGISTRATION_ID
-laser_calibration_id: REPLACE_WITH_SITE_LASER_CALIBRATION_ID
+experiment_run_id: 20260908
+phantom_id: 0
+phantom_formula: 0
+phantom_batch_id: 0
+phantom_preparation_time: 0
+operator_ids: [0]
+laser_safety_approval_id: 0
+registration_calibration_id: 0
+laser_calibration_id: 0
 oct_repeatability_xor_mm3: 0.0  # Replace with the measured positive five-scan value.
 random_seed: 20260908
 raster_settings:
