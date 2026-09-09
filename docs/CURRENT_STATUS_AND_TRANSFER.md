@@ -40,7 +40,7 @@ The repository excludes raw OCT drivers, the Raspberry Pi TCP listener, calibrat
 
 These results establish offline software behavior. They do not establish the active OCT preset, physical registration, laboratory obstacle clearance, live Raspberry Pi replies/watchdog, focus, energy delivery, or tissue outcome.
 
-The host reports `/mnt/OCT_Data` as a read-only CIFS mount from `//192.168.1.2/OCT_Data`. Directory and `stat` requests did not return within five seconds during the current audit, so no scan folder was inspected. `config/site.yaml` is absent.
+The host reports `/mnt/OCT_Data` as a read-only CIFS mount from `//192.168.1.2/OCT_Data`. Directory and `stat` requests did not return within five seconds during the current audit, so no scan folder was inspected. `config/site.yaml` now exists with transferred geometry and unresolved laser placeholders; it is not a qualified physical configuration.
 
 ## Destination computer preparation
 

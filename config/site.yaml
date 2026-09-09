@@ -1,5 +1,5 @@
-# Copy to config/site.yaml and replace every calibration placeholder before qualification.
-physical_execution_enabled: false
+# Working site file: retain transferred geometry and replace only measured placeholders.
+physical_execution_enabled: false  # Enable only after every runbook qualification record passes.
 robot:
   ip: 192.168.1.103
   safe_joint_pose_rad: [1.610071, -1.041262, 1.274265, -3.389604, -1.140393, 1.535890]
@@ -50,6 +50,7 @@ laser:
   frequency_hz: 100.0
   pulse_duration_s: 1.5
   startup_delay_s: 0.2
+  # Deployment 4 manual block: values come only from the certified operator's records.
   energy_to_duty_cycle: []
   status_key: 0
   stopped_value: 0

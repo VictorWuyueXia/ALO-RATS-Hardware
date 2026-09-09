@@ -1,3 +1,4 @@
+# Fill identity/calibration fields from the handoff records; retain raster settings.
 experiment_number: 3
 experiment_run_id: 20260908
 phantom_id: 0

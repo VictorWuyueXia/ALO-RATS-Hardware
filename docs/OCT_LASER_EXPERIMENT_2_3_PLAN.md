@@ -39,7 +39,7 @@ The two reference trees are read-only.
 
 Historical file values identify protocol shape and processing intent. Every address, transform, pixel scale, response field, and PWM calibration value must be measured on the active equipment.
 
-The current Ubuntu host reports `/mnt/OCT_Data` as a read-only CIFS mount from `//192.168.1.2/OCT_Data`. A five-second directory/stat check did not return, so folder contents and the active preset are not yet qualified. No local `config/site.yaml` exists.
+The current Ubuntu host reports `/mnt/OCT_Data` as a read-only CIFS mount from `//192.168.1.2/OCT_Data`. A five-second directory/stat check did not return, so folder contents and the active preset are not yet qualified. The local `config/site.yaml` contains transferred geometry and unresolved laser placeholders; it is not a qualified physical configuration.
 
 ## Fixed design
 

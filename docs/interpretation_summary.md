@@ -1,14 +1,11 @@
-# OCT and laser integration interpretation summary
+# Interpretation summary
 
-The current checkout implements mounted-folder OCT reconstruction, target/protected-boundary designation, unchanged MPPI planning, checked RTDE action motion, the deployed Raspberry Pi JSON action vocabulary, and one-pulse/one-feedback-scan coordination. Physical mode remains disabled until the active scanner preset, transforms, robot installation, Raspberry Pi replies/watchdog, and energy table are measured and qualified.
+The runbook now separates repository preparation from certified laser operation. The repository maintainer completes software, OCT records, registration, and robot state/safe-pose work with the laser and Raspberry Pi unpowered. The certified operator then performs the familiar physical safety actions, records five live laser values, and runs one preselected command after remote configuration validation.
 
-The corrected reference ownership is precise: `hybrid_arm_mirror/oct/` supplies OCT serial and B-scan reconstruction evidence, while `see_plan_cut/ndyag_laser_control/` supplies the Raspberry Pi GPIO and TCP-client evidence. The downloaded Pi folder contains no listening server implementation, so its live reply schema and independent cutoff remain measured inputs.
+The present boundaries are the live laser interface and two missing laser-free qualification commands. Raspberry Pi stopped-state semantics, an independent cutoff result, and a measured duty-to-energy table do not exist in this checkout. The mounted-folder adapter has no OCT-only entry point, and the hardware dry run cannot execute an inert MPPI treatment pose and return. Physical execution remains intentionally disabled until these paths and values are qualified. A completely unattended repository-blind operator handoff is therefore unsupported.
 
-Experiments 2 and 3 require the same causal cycle: one ALO-RATS action, one verified robot pose, one bounded PWM pulse, one execution receipt, one new registered OCT observation, then one controller update. Any uncertain pulse or invalid feedback scan ends the run without an automatic retry.
+Human instructions and conclusions belong under each handoff or run's `human_readables/` directory. Raw device replies, OCT and power measurements, configuration identities, motion records, and terminal status belong under `machine_readables/`. Acceptance comes from `machine_readables/workflow_status.json` and its supporting records, never from console output or screenshots.
 
-Offline validation passes. Experiment completion still requires the ordered milestone flags in the plan and physical evidence written by the coordinator.
+`0-OPERATOR_RUNBOOK.md` contains the short four-phase procedure. `OPERATOR_HANDOFF_REFERENCE.md` contains the exact device schemas, minimal manual config fields, and code-readiness map.
 
-Primary documents:
-
-- [`OCT_LASER_EXPERIMENT_2_3_PLAN.md`](OCT_LASER_EXPERIMENT_2_3_PLAN.md) defines the code budget, milestones, validation, formulas, and completion flags.
-- [`0-OPERATOR_RUNBOOK.md`](0-OPERATOR_RUNBOOK.md) defines the operator sequence before, during, and after the experiments.
+The current physical coordinator accepts scientific experiments 2 and 3. Scientific experiments 1 and 4 in `Experiment_Plan.md` have no physical entry point. All physical results remain prospective until a certified run produces complete evidence.
