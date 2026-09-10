@@ -29,13 +29,12 @@ def propose(session, index):
 
 
 def select_action(session):
-    """Replan exhausted sequences before processing the coincident periodic event."""
+    """Stop an exhausted sequence before processing the coincident periodic event."""
     if session.prefix >= len(session.plan.actions):
-        if not propose(session, session.replans + 1):
-            return None
-        session.replans += 1
-        session.selected_ids.append(session.plan.trajectory_id)
-        session.prefix = 0
+        # The deployment uses the four initial raster parents throughout; do not
+        # invoke the geometry-generated global-plan branch after sequence exhaustion.
+        session.stopped_reason = "ACTION_SEQUENCE_EXHAUSTED"
+        return None
     due = session.confirmed_pulses > 0 and session.confirmed_pulses % session.periodic_repair_pulses == 0
     session.cycle_record = {
         "periodic_repair_due": due, "periodic_repair_attempted": False,
@@ -48,7 +47,7 @@ def select_action(session):
 
 
 def repair(session):
-    """Attempt one periodic repair, then only the explicit requested global branch."""
+    """Attempt one periodic repair without invoking another global plan."""
     session.repairs += 1
     request = RepairRequest(
         session.plan.trajectory_id, session.prefix, RepairTrigger.PERIODIC, None,
@@ -59,10 +58,10 @@ def repair(session):
     try:
         session.plan = session.planner.repair(session.state, session.observed, request)
     except GlobalReplanRequired:
-        replanned = True
-        failed = not propose(session, session.replans + 1)
-        if failed:
-            replanned = False
+        # A failed local repair terminates this run; the expensive geometry-generated
+        # global-plan branch remains unused after the initial four-raster plan.
+        failed = True
+        session.stopped_reason = "REPAIR_REQUIRES_GLOBAL_REPLAN"
     elapsed = perf_counter() - started
     event = {
         "event_id": len(session.repair_events) + 1,
@@ -72,7 +71,7 @@ def repair(session):
         "periodic_global_replan": replanned,
         "repair_artifact_directory": str(request.artifact_directory),
         "result_trajectory_id": None if failed else session.plan.trajectory_id,
-        "status": "global_planning_failed" if failed else ("global_replan" if replanned else "repaired"),
+        "status": "global_replan_skipped" if failed else "repaired",
     }
     session.repair_events.append(event)
     with session.event_path.open("a", newline="", encoding="utf-8") as stream:

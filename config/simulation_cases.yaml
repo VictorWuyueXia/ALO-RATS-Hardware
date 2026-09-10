@@ -6,14 +6,6 @@ acceptance_cases:
   - separated_patches
   - protected_boundary
   - response_disturbance
-launch_cases:
-  - centered_rectangle
-  - offset_round
-  - stepped_floor
-  - separated_patches
-  - protected_boundary
-  - response_disturbance
-  - compact_diagnostic
 cases:
   centered_rectangle:
     disturbed_pulse: null
@@ -24,7 +16,7 @@ cases:
           half_size_xy_mm: [2.0, 2.0]
           depth_mm: 2.0
           right_depth_mm: null
-      grid_bounds_mm: [[-3.0, 3.0], [-3.0, 3.0], [-3.0, 0.0]]
+      grid_bounds_mm: [[-3.0, 3.0], [-3.0, 3.0], [-3.5, 0.5]]
       constraint_depth_mm: 3.0
       plane_z_mm: 0.0
       frame_id: nominal_tissue
@@ -140,23 +132,3 @@ cases:
       candidate_grid_center_xy_mm: [0.0, 0.0]
       candidate_depth_repetitions: 16
       candidate_energies_j: [4.0, 8.0]
-  compact_diagnostic:
-    disturbed_pulse: null
-    designation:
-      regions:
-        - shape: ellipse
-          center_xy_mm: [0.0, 0.0]
-          half_size_xy_mm: [0.6, 0.6]
-          depth_mm: 0.5
-          right_depth_mm: null
-      grid_bounds_mm: [[-1.2, 1.2], [-1.2, 1.2], [-2.0, 0.4]]
-      constraint_depth_mm: 1.5
-      plane_z_mm: 0.3
-      frame_id: nominal_tissue
-      authority_id: nominal_registration_surface_task_only
-    raster_settings:
-      candidate_grid_pitches_xy_mm: [[0.3, 0.3], [0.35, 0.35]]
-      candidate_grid_shape: [1, 1]
-      candidate_grid_center_xy_mm: [0.0, 0.0]
-      candidate_depth_repetitions: 1
-      candidate_energies_j: [3.8, 4.0]

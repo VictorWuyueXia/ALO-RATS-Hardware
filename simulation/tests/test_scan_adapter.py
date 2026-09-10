@@ -38,21 +38,20 @@ def test_analytic_scan_volume_and_sdf(tilted):
     assert not observed.state.target_mask.flags.writeable
 
 
-def test_default_constraint_plane_tracks_the_initial_surface_one_mm_below_target():
-    """The default 3 mm constraint plane leaves a 1 mm interval below the 2 mm target floor."""
+def test_configured_constraint_plane_remains_one_mm_below_target():
+    """Configurable lattice bounds preserve the declared target-to-protection interval."""
     from simulation.simulation.simulation_cases import simulation_case
 
     case = simulation_case("centered_rectangle")
     state = designate_task(case.scan(), case.designation).state
-    assert case.designation.grid_bounds_mm == ((-3.0, 3.0), (-3.0, 3.0), (-3.0, 0.0))
-    assert case.designation.regions[0].half_size_xy_mm == (2.0, 2.0)
-    assert case.designation.regions[0].depth_mm == 2.0
-    assert case.designation.constraint_depth_mm == 3.0
-    assert state.target_mask[:, :, :10].sum() == 0
-    assert state.constraint_mask[:, :, 0].all()
-    assert not state.constraint_mask[:, :, 1:].any()
-    target_floor_mm = state.z_axis_mm[10] - SPACING_MM / 2
-    constraint_surface_mm = state.z_axis_mm[0] - SPACING_MM / 2
+    assert case.designation.constraint_depth_mm - case.designation.regions[0].depth_mm == 1.0
+    target_start = np.flatnonzero(state.target_mask.any(axis=(0, 1)))[0]
+    protected_end = np.flatnonzero(state.constraint_mask.any(axis=(0, 1)))[-1]
+    assert state.target_mask[:, :, :target_start].sum() == 0
+    assert state.constraint_mask[:, :, :protected_end + 1].all()
+    assert not state.constraint_mask[:, :, protected_end + 1:].any()
+    target_floor_mm = state.z_axis_mm[target_start] - SPACING_MM / 2
+    constraint_surface_mm = state.z_axis_mm[protected_end] - SPACING_MM / 2
     assert np.isclose(target_floor_mm - constraint_surface_mm, 1.0)
 
 

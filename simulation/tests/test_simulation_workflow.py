@@ -70,6 +70,8 @@ def workflow_case(tmp_path):
 
 def test_eleven_receipts_scans_and_periodic_order(workflow_case):
     session, task, observed, robot, plant, records, display = workflow_case
+    messages = []
+    display.status = messages.append
     run_workflow(*workflow_case)
     assert session.confirmed_pulses == session.last_observation.sequence == 11
     assert len(plant.executions) == 11 and session.stopped_reason == "maximum_pulses"
@@ -83,6 +85,8 @@ def test_eleven_receipts_scans_and_periodic_order(workflow_case):
             prior = [event for event in events[:i] if event["event"] == "receipt"][-1]
             assert row["command_id"] == prior["receipt"]["command_id"]
     assert not np.shares_memory(session.state.tissue, plant._state.tissue)
+    assert any(message.startswith("Selecting the next active-plan action") for message in messages)
+    assert any(message.startswith("Periodic MPPI repair") for message in messages)
 
 
 def test_display_uses_darker_larger_voxel_points(workflow_case, monkeypatch):

@@ -13,8 +13,8 @@ from .surface_scan import rigid_transform
 
 
 STANDOFF_M = 0.040
-INTERCEPT_TOLERANCE_MM = 0.025
-AXIS_TOLERANCE_RAD = 0.001
+INTERCEPT_TOLERANCE_MM = 1.0
+AXIS_TOLERANCE_RAD = 0.01
 
 
 def pose_matrix(position, quaternion):

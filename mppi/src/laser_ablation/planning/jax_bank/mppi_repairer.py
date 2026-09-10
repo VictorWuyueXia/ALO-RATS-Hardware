@@ -83,7 +83,8 @@ class MPPIPlanRepairer:
                 f"initial MPPI iteration={iteration + 1}/{self.config.iterations} "
                 f"hard_feasible={int(np.count_nonzero(rollout.constraint_feasible))} "
                 f"admissible={int(np.count_nonzero(rollout.accepted))} "
-                f"median_ess={float(np.median(effective_samples)) if len(effective_samples) else 0.0:.2f}",
+                f"median_ess={float(np.median(effective_samples)) if len(effective_samples) else 0.0:.2f} "
+                f"flags={{{', '.join(f'{name}:{int(np.count_nonzero(values))}' for name, values in rollout.flags.items())}}}",
                 flush=True,
             )
         children = self.executor.screen(

@@ -1,16 +1,9 @@
-# Fill identity/calibration fields from the handoff records; retain raster settings.
+# Fill run-specific fields from the handoff records; retain raster settings.
 experiment_number: 3
 experiment_run_id: 20260908
-phantom_id: 0
-phantom_formula: 0
-phantom_batch_id: 0
-phantom_preparation_time: 0
-operator_ids: [0]
 laser_safety_approval_id: 0
-registration_calibration_id: "OCT_UR5E_REG_2026-09-08"
 laser_calibration_id: 0
-oct_repeatability_xor_mm3: 0.0  # Replace with the measured positive five-scan value.
-random_seed: 20260908
+random_seed: 20260902  # Must match config/simulation_cases.yaml.
 raster_settings:
   candidate_grid_pitches_xy_mm: [[0.675, 0.675], [0.7, 0.7]]
   candidate_grid_shape: [5, 5]

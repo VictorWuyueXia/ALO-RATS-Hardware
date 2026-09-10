@@ -58,7 +58,7 @@ class UR5eConnection:
         matrix[:3, 3] = tcp[:3]
         return matrix
 
-    def execute_action(self, request, task_state):
+    def execute_action(self, request, task_state, require_confirmation=False):
         """Solve, safety-check, execute, and measure one requested laser pose."""
         if self.control is None or not self.control.isConnected():
             raise RuntimeError("Robot is not connected")
@@ -75,6 +75,15 @@ class UR5eConnection:
             raise ValueError("ROBOT_ACTION_REJECTED: joint change exceeds the site limit")
         if not self.control.isJointsWithinSafetyLimits(joints.tolist()):
             raise ValueError("ROBOT_ACTION_REJECTED: inverse-kinematics joints exceed robot safety limits")
+        if require_confirmation:
+            print(f"Requested action [x_mm, y_mm, tilt_x_rad, tilt_y_rad, energy_j]: "
+                  f"{request.action.as_array().tolist()}", flush=True)
+            print(f"Checked target tool0 TCP [m, rad]: {tcp_pose.tolist()}", flush=True)
+            print(f"Checked target joints [rad]: {joints.tolist()}", flush=True)
+            print(f"Maximum joint change: {np.max(np.abs(joints - current)):.6f} rad", flush=True)
+            approval = input(f"Type MOVE {request.command_id} exactly to execute this motion: ")
+            if approval != f"MOVE {request.command_id}":
+                raise KeyboardInterrupt("Operator declined robot motion")
         started = perf_counter()
         if not self.control.moveJ(joints.tolist(), self.site.robot["move_speed_rad_s"],
                                   self.site.robot["move_acceleration_rad_s2"]):

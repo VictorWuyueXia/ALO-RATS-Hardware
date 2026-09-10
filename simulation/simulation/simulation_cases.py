@@ -14,11 +14,8 @@ SIMULATION_CONFIG_PATH = Path(__file__).resolve().parents[2] / "config/simulatio
 SIMULATION_CONFIG = yaml.safe_load(SIMULATION_CONFIG_PATH.read_text(encoding="utf-8"))
 RANDOM_SEED = int(SIMULATION_CONFIG["random_seed"])
 CASE_NAMES = tuple(SIMULATION_CONFIG["acceptance_cases"])
-LAUNCH_CASE_NAMES = tuple(SIMULATION_CONFIG["launch_cases"])
 if (len(CASE_NAMES) != len(set(CASE_NAMES))
-        or len(LAUNCH_CASE_NAMES) != len(set(LAUNCH_CASE_NAMES))
-        or not set(CASE_NAMES) < set(LAUNCH_CASE_NAMES)
-        or set(LAUNCH_CASE_NAMES) != set(SIMULATION_CONFIG["cases"])):
+        or set(CASE_NAMES) != set(SIMULATION_CONFIG["cases"])):
     raise ValueError("simulation case lists must uniquely cover the configured cases")
 
 
@@ -45,7 +42,7 @@ class SimulationCase:
 def simulation_case(name):
     """Build one case from the sole root configuration authority."""
     cases = SIMULATION_CONFIG["cases"]
-    if name not in cases or name not in LAUNCH_CASE_NAMES:
+    if name not in cases or name not in CASE_NAMES:
         raise ValueError(f"Unknown simulation case: {name}")
     values = cases[name]
     geometry = values["designation"]

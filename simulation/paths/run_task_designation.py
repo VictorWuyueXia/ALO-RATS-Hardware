@@ -144,6 +144,9 @@ class TaskEditor:
         self.volume_ax.set_zlabel("Z [mm]", fontsize=14, labelpad=10)
         self.volume_ax.set_title("Registered scan + designated target/protection", fontsize=16, pad=16)
         self.volume_ax.tick_params(labelsize=11)
+        bounds = np.asarray(self.designation.grid_bounds_mm)
+        self.volume_ax.set(xlim=bounds[0], ylim=bounds[1], zlim=bounds[2])
+        self.volume_ax.set_box_aspect(np.ptp(bounds, axis=1))
         # Paint the approved geometry before Qt enters its blocking event loop.
         self.figure.canvas.draw()
 

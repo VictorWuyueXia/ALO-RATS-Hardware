@@ -35,7 +35,8 @@ def check_suite(output):
                                     "simulation/tests/test_simulation_acceptance.py",
                                     "simulation/tests/test_simulation_entrypoints.py"],
                                    cwd=root, stdout=log, stderr=subprocess.STDOUT,
-                                   env={**os.environ, "PYTHONDONTWRITEBYTECODE": "1"})
+                                   env={**os.environ, "PYTHONDONTWRITEBYTECODE": "1",
+                                        "PYTEST_DISABLE_PLUGIN_AUTOLOAD": "1"})
     if negative.returncode != 0:
         summary = {"negative_checks_passed": False, "URDF_MPPI_TASK_SUITE_COMPLETE": False}
         write_json(output / "suite_result.json", summary)

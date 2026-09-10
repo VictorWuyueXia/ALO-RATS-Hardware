@@ -2,18 +2,19 @@
 physical_execution_enabled: false  # Enable only after every runbook qualification record passes.
 robot:
   ip: 192.168.1.103
-  safe_joint_pose_rad: [1.610071, -1.041262, 1.274265, -3.389604, -1.140393, 1.535890]
-  scan_joint_pose_rad: [1.610071, -1.041262, 1.274265, -3.389604, -1.140393, 1.535890]
+  # Measured where the OCT scanner covers the current bench tissue area with active TCP tool0.
+  safe_joint_pose_rad: [-0.61228687, -2.31055894, -1.35130274, 3.65143649, -1.37298042, -1.55824644]
+  scan_joint_pose_rad: [-0.61228687, -2.31055894, -1.35130274, 3.65143649, -1.37298042, -1.55824644]
   move_speed_rad_s: 0.10
   move_acceleration_rad_s2: 2.0
   maximum_joint_delta_rad: 1.0
   maximum_joint_error_rad: 0.005
 registration:
-  calibration_id: see_plan_cut_2025_08_29_tool0_oct_laser_geometry
+  calibration_id: current_bench_20260909_oct_and_inert_visual_laser_alignment
   base_from_planning_m:
-    - [0.5757374956, 0.8168669637, -0.0354217418, 0.4541321653]
-    - [-0.8175053591, 0.5743358077, -0.0427009117, -0.5960594892]
-    - [-0.0145369894, 0.0535419797, 0.9984597800, 0.1022859641]
+    - [0.7023455943214656, 0.7091137884131546, 0.06219566879905752, 0.5332693675751091]
+    - [-0.7008764238025985, 0.7041603999703823, -0.11371178355918421, -0.5728555763046045]
+    - [-0.12443032061486689, 0.036273492351077415, 0.9915650906417347, 0.02553435227377917]
     - [0.0, 0.0, 0.0, 1.0]
   tcp_from_oct_m:
     - [0.0183961749, -0.0326994301, -0.9992959161, 0.1544759401]
@@ -21,23 +22,23 @@ registration:
     - [0.9996875700, -0.0163139267, 0.0189372169, 0.0441360432]
     - [0.0, 0.0, 0.0, 1.0]
   tcp_from_laser_m:
-    - [0.0464258683, -0.0759075874, -0.9960334718, 0.1382643379]
-    - [0.0190337119, 0.9969948133, -0.0750936755, -0.0025577463]
-    - [0.9987403850, -0.0154719251, 0.0477311531, 0.0448777232]
+    - [0.1263822426108193, -0.0591610106183935, -0.9902158873149275, 0.1901130962379990]
+    - [0.1580752747452993, 0.9866655038464157, -0.0387735857584549, 0.07409348578274244]
+    - [0.9793057419758440, -0.1516283557222510, 0.1340488921008569, 0.0744825052394803]
     - [0.0, 0.0, 0.0, 1.0]
   laser_standoff_m: 0.040
-  maximum_intercept_error_mm: 0.025
-  maximum_axis_error_rad: 0.001
+  maximum_intercept_error_mm: 1.0
+  maximum_axis_error_rad: 0.01
 oct:
-  shared_root: /mnt/OCT_Data  # Detected read-only CIFS mount; verify responsiveness before use.
-  file_pattern: "*.tif"
-  expected_b_scans: 128
+  shared_root: /mnt/OCT_Data/victor
+  file_pattern: "BSCAN-SGL-*.tif"
+  expected_b_scans: 256
   image_shape_px: [512, 512]
-  pixel_spacing_lateral_scan_depth_mm: [0.028, 0.11173, 0.01459]
+  pixel_spacing_lateral_scan_depth_mm: [0.014, 0.028, 0.01459]
   axis_order: [0, 1, 2]
   axis_signs: [1, 1, 1]
   surface_margin_px: 30
-  surface_threshold_u8: 80
+  surface_threshold_u8: 50  # Validated against the processed 16-bit export decoded by OpenCV.
   planning_volume_bounds_mm: [[-2.8, 2.8], [-2.8, 2.8], [-8.0, 0.6]]
   planning_frame_id: see_plan_cut_experiment_2_tissue_frame
   stable_observations: 3

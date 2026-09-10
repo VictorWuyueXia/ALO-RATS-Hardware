@@ -13,20 +13,21 @@ Windows Lumedica application -> mounted B-scan folder -> registered observation
 -> return -> new mounted B-scan folder -> controller update
 ```
 
-The second workflow is implemented and disabled by default. It has no current calibration data or live-device qualification. Software presence does not authorize physical motion or emission.
+The second workflow is implemented and disabled by default. It contains transferred fixed Experiment 2 geometry but has no live-device qualification. Software presence does not authorize physical motion or emission.
 
 ## Repository contents
 
 - `mppi/`: copied MPPI runtime and exact method configuration; numerical source/configuration remain unchanged.
 - `assets/ur5e/`: collaborator-supplied UR5e URDF and referenced meshes.
 - `simulation/`: PyBullet-only workflow with virtual ablation and explicit non-local device isolation.
-- `src/alo_rats_hardware/oct_folder.py`: stable mounted-folder import, parallel B-scan processing, height-field reconstruction, registration, and processed-volume output.
+- `src/alo_rats_hardware/oct_folder.py` and `scripts/check_oct_folder.py`: stable mounted-folder import, parallel B-scan processing, height-field reconstruction, registration, processed-volume output, and one-folder preparation check.
 - `src/alo_rats_hardware/robot.py`: RTDE state, safety/IK checks, action motion, endpoint measurement, and scan-pose return.
 - `src/alo_rats_hardware/laser.py`: one-JSON-per-connection Raspberry Pi PWM client with energy calibration and stopped-state verification.
 - `src/alo_rats_hardware/hardware_experiment.py`: experiment 2/3 operator-approved coordinator and terminal evidence.
-- `config/site.example.yaml`, `config/experiment_2.example.yaml`, and `config/experiment_3.example.yaml`: strict placeholder templates that reject physical execution until completed.
+- `config/site.yaml`: transferred fixed Experiment 2 geometry with physical execution disabled; live Raspberry Pi response, energy, watchdog, and experiment-record values remain unqualified.
+- `config/site.example.yaml`, `config/experiment_2.example.yaml`, and `config/experiment_3.example.yaml`: portable templates.
 
-The repository excludes raw OCT drivers, the Raspberry Pi TCP listener, calibration measurements, hardware results, datasets, and old Git history.
+The repository excludes raw OCT drivers, the Raspberry Pi TCP listener, live laser calibration measurements, hardware results, datasets, and old Git history.
 
 ## Validation completed on 2026-09-08
 
@@ -65,15 +66,16 @@ GPU execution must occur outside the sandbox. Require JAX backend `gpu` with dev
 
 ## Current use
 
-### Simulation
+### Optional planner evaluation
 
 ```bash
-demo_root=$(mktemp -d /tmp/alo-rats-simulation.XXXXXX)
-.venv/bin/python -m simulation.paths.run_simulation \
-  --case compact_diagnostic --output-dir "$demo_root/run"
+suite_root=$(mktemp -d /tmp/alo-rats-simulation-suite.XXXXXX)
+LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libstdc++.so.6 \
+  .venv/bin/python -m simulation.paths.check_simulation \
+  --output-dir "$suite_root/run"
 ```
 
-This is a virtual workflow. The simulation isolation layer rejects RTDE, OCT, laser modules, and non-local socket connections.
+This expensive command evaluates completion across the tracked simulation case matrix with the same MPPI method configuration used by physical deployment. It is not a hardware-deployment prerequisite. The simulation isolation layer rejects RTDE, OCT, laser modules, and non-local socket connections.
 
 ### Processed-OCT robot dry run
 
@@ -84,7 +86,7 @@ This is a virtual workflow. The simulation isolation layer rejects RTDE, OCT, la
   --output-dir outputs/dry_run_001
 ```
 
-The input follows [`PROCESSED_OCT_CONTRACT.md`](PROCESSED_OCT_CONTRACT.md). The command records RTDE state and sends no motion unless the operator supplies `--move-safe-pose`. It does not import or call the laser client.
+The input follows [`04-PROCESSED_OCT_CONTRACT.md`](04-PROCESSED_OCT_CONTRACT.md). The command records RTDE state and sends no motion unless the operator supplies `--move-safe-pose`. It does not import or call the laser client.
 
 ### Physical experiment entry point
 
@@ -96,7 +98,7 @@ The input follows [`PROCESSED_OCT_CONTRACT.md`](PROCESSED_OCT_CONTRACT.md). The 
   --output-dir outputs/experiment_2_001
 ```
 
-This command fails before hardware connection when physical execution is disabled or any required calibration/metadata value is missing. Follow [`0-OPERATOR_RUNBOOK.md`](0-OPERATOR_RUNBOOK.md); do not enable it before every earlier success flag is recorded.
+This command fails before hardware connection when physical execution is disabled or any required calibration/metadata value is missing. Follow [`01-OPERATOR_RUNBOOK.md`](01-OPERATOR_RUNBOOK.md); do not enable it before every earlier success flag is recorded.
 
 ## Correct interface provenance
 
@@ -115,13 +117,13 @@ The physical executor uses the same ur-rtde control/receive interfaces as the co
 ## Remaining work before experiments
 
 1. Record `LIVE_INTERFACES_IDENTIFIED` from the mounted share, live Pi service, UR installation, watchdog, and calibration audit.
-2. Validate at least three recorded Lumedica folders and record `OCT_FOLDER_TO_VOLUME_PASS`.
+2. Save one complete 256-image Lumedica volume under `/mnt/OCT_Data/victor`, run the folder check, and record `PREPARATION_2_OCT_FOLDER_PASS`.
 3. Execute inert scan/treatment/return paths and record `ROBOT_ACTION_AND_RETURN_PASS`.
 4. Validate the Pi with power disabled, then measure a beam-dump energy table and record `LASER_BOUNDED_PULSE_PASS`.
 5. Complete failure-injected replay and one physical cycle; record `COORDINATOR_REPLAY_PASS` and `ONE_PHYSICAL_CYCLE_PASS`.
 6. Run experiment 2, review its complete evidence, then run experiment 3.
 
-The detailed acceptance conditions are in [`OCT_LASER_EXPERIMENT_2_3_PLAN.md`](OCT_LASER_EXPERIMENT_2_3_PLAN.md).
+The detailed acceptance conditions are in [`01-OPERATOR_RUNBOOK.md`](01-OPERATOR_RUNBOOK.md) and [`05-EXPERIMENT_PLAN.md`](05-EXPERIMENT_PLAN.md).
 
 ## Reference source map
 

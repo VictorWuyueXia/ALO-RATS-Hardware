@@ -14,9 +14,10 @@
 Run the primary paths from the repository root:
 
 ```bash
-python -m simulation.paths.check_robot_scene --output-dir /absolute/new/robot_scene
-python -m simulation.paths.run_simulation --case compact_diagnostic --output-dir /absolute/new/run
-python -m simulation.paths.run_robot_preview
+LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libstdc++.so.6 .venv/bin/python -m simulation.paths.check_robot_scene --output-dir /absolute/new/robot_scene
+LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libstdc++.so.6 .venv/bin/python -m simulation.paths.check_simulation --output-dir /absolute/new/suite
+LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libstdc++.so.6 .venv/bin/python -m simulation.paths.run_simulation --case centered_rectangle --output-dir /absolute/new/run
+LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libstdc++.so.6 .venv/bin/python -m simulation.paths.run_robot_preview
 ```
 
 Run the simulation tests with:

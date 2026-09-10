@@ -91,7 +91,7 @@ class JaxPlanBankPlanner:
             voxel_state, raster_generator,
             self.geometry_generator if include_geometry else None,
         )
-        generated_actions = seeds.actions
+        generated_actions = tuple(actions[:self.maximum_pulses] for actions in seeds.actions)
         generated_origins = seeds.source_ids
         generated_batch = PaddedActionBatch.from_sequences(generated_actions, generated_origins)
         expanded_actions, expanded_origins = self.repairer.expand_initial(

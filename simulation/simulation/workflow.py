@@ -27,7 +27,15 @@ def run_workflow(session, task, initial_observation, robot, plant, records, disp
             robot.poll()
             phase = "planning"
             plan_started = perf_counter()
-            display.status(f"Planning from scan {session.last_observation.scan_id}; pulses {session.confirmed_pulses}")
+            if session.prefix >= len(session.plan.actions):
+                operation = "Global replanning after active-plan exhaustion"
+            elif (session.confirmed_pulses > 0
+                  and session.confirmed_pulses % session.periodic_repair_pulses == 0):
+                operation = "Periodic MPPI repair"
+            else:
+                operation = "Selecting the next active-plan action"
+            display.status(f"{operation} from scan {session.last_observation.scan_id}; "
+                           f"pulses {session.confirmed_pulses}")
             request = session.next_action()
             planning_time = perf_counter() - plan_started
             if request is None:

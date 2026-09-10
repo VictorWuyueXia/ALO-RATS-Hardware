@@ -176,6 +176,18 @@ def test_robot_recovers_the_measured_action_from_rtde_pose(tmp_path):
     assert robot.last_motion["intercept_error_mm"] < 1e-9
 
 
+def test_robot_requires_exact_operator_confirmation_before_motion(tmp_path, monkeypatch):
+    site = SiteConfiguration(**site_values(tmp_path, physical=True))
+    receive = FakeReceive()
+    robot = UR5eConnection(site, FakeControl(receive), receive)
+    action = PhysicalAction(1.0, 0.0, 0.0, 0.0, 3.0)
+    request = ActionRequest("command-confirm", "task", "trajectory", 0, action, time() - 1)
+    monkeypatch.setattr("builtins.input", lambda message: "CANCEL")
+    with pytest.raises(KeyboardInterrupt, match="declined robot motion"):
+        robot.execute_action(request, SimpleNamespace(plane_z_mm=0.0), require_confirmation=True)
+    assert np.array_equal(receive.joints, np.zeros(6))
+
+
 def test_robot_rejects_scan_pose_when_measured_joints_do_not_arrive(tmp_path):
     values = site_values(tmp_path)
     values["robot"]["scan_joint_pose_rad"] = [0.1] * 6

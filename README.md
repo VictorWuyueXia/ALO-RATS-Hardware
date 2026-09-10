@@ -4,7 +4,7 @@ This is a clean, history-free runtime workspace for integrating the ALO-RATS MPP
 
 It contains the **unchanged MPPI source and method configuration**, supplied UR5e URDF/meshes, processed-OCT interchange, mounted-folder reconstruction, mouse-driven designation, PyBullet simulation, RTDE execution, a disabled-by-default TCP PWM client, and the experiment 2/3 coordinator. It contains no scanner driver, Raspberry Pi listener service, calibration results, experiment results, or old Git history.
 
-Read [the current situation and transfer handoff](docs/CURRENT_STATUS_AND_TRANSFER.md) before preparing a new computer. The active Lumedica acquisition runs in its Windows application and exposes scan folders through a mounted Ubuntu share. The OCT/laser implementation and remaining physical qualifications are in [the experiment plan](docs/OCT_LASER_EXPERIMENT_2_3_PLAN.md), with the exact [operator runbook](docs/0-OPERATOR_RUNBOOK.md).
+For the laboratory demonstration, follow the [02 boot-to-demonstration manual](docs/02-OPERATOR_HANDOFF_REFERENCE.md). The [01 preparation runbook](docs/01-OPERATOR_RUNBOOK.md) retains the completed development and inert-qualification details; documents 03–06 provide implementation contracts and project history. The active Lumedica acquisition runs in its Windows application and exposes scan folders through a mounted Ubuntu share.
 
 ## Install
 
@@ -74,7 +74,7 @@ The window shows the processed OCT upper envelope. Drag target footprints, set t
 
 Only after validating the output and physical workspace may an operator add `--move-safe-pose`. That flag invokes `moveJ` only to the reviewed `safe_joint_pose_rad` in `config/site.yaml`.
 
-See [the hardware dry-run procedure](docs/HARDWARE_DRY_RUN.md) and [the processed-OCT contract](docs/PROCESSED_OCT_CONTRACT.md) before connecting hardware.
+See [03 hardware dry-run procedure](docs/03-HARDWARE_DRY_RUN.md) and [04 processed-OCT contract](docs/04-PROCESSED_OCT_CONTRACT.md) before connecting hardware.
 
 ## Physical experiment coordinator
 
@@ -90,17 +90,18 @@ The physical entry point is implemented but rejects the example configuration. C
 
 Each cycle requires exact typed approval for motion and emission, one verified PWM receipt, return to the scan pose, and one new OCT folder before controller update. Unknown PWM outcome terminates the run without retry.
 
-## Simulation
+## Planner evaluation
 
-The existing integrated demonstration remains separate from the hardware path:
+Planner completion and outcome-quality evaluation remain separate from hardware deployment. Run the expensive case matrix when evaluating the planner:
 
 ```bash
-demo_root=$(mktemp -d /tmp/alo-rats-simulation.XXXXXX)
-python -m simulation.paths.run_simulation \
-  --case compact_diagnostic --output-dir "$demo_root/run"
+suite_root=$(mktemp -d /tmp/alo-rats-simulation-suite.XXXXXX)
+LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libstdc++.so.6 \
+  .venv/bin/python -m simulation.paths.check_simulation \
+  --output-dir "$suite_root/run"
 ```
 
-It runs one process: designation → baseline MPPI method (10 anchors, 128 samples per anchor, and seed `20260902`) → checked URDF motion → virtual pulse → synthetic volume observation → replanning. The root `config/simulation_cases.yaml` file defines simulation geometry defaults and global-planner raster energy seeds. The comparable centered-rectangle and response-disturbance cases use the baseline 4/8-J raster seeds; geometrically distinct cases retain their exact-validated seed energies. `method.json` records the selected compute profile, JAX backend, and device list. It is a simulation-only application: `simulation/simulation/simulation_isolation.py` rejects RTDE, OCT, laser modules, and all non-local socket connections. The compact diagnostic is not an acceptance-quality treatment result; inspect its `acceptance.json`.
+The suite runs every case in `config/simulation_cases.yaml` with the tracked `mppi/configs/controller.yaml` method, repeats the centered rectangle, and opens the accepted centered case in the operator UI. Each control cycle follows designation → initial global plan → checked URDF motion → virtual pulse → synthetic volume observation → next active-plan action, with periodic MPPI repair every 10 confirmed pulses and global replanning after active-plan exhaustion or an explicit repair request. `method.json` records the selected compute profile, JAX backend, device list, source values, and source hashes. Planner completion is a research result and is not a hardware-deployment prerequisite.
 
 For a lightweight robot-interaction preview that does not run MPPI, use:
 

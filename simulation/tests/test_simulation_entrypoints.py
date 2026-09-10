@@ -12,11 +12,11 @@ import pybullet as p
 
 from laser_ablation.control.method import load_method
 from simulation.robot.robot_scene import ROOT
-from simulation.simulation.simulation_cases import CASE_NAMES, LAUNCH_CASE_NAMES, SIMULATION_CONFIG_PATH, simulation_case
+from simulation.simulation.simulation_cases import CASE_NAMES, SIMULATION_CONFIG_PATH, simulation_case
 
 
 @pytest.mark.parametrize(("platform", "count", "profile_name", "rollout_batch_size"), [
-    ("cpu", 1, "cpu", 4), ("gpu", 1, "1gpu", 4),
+    ("cpu", 1, "cpu", 4), ("gpu", 1, "1gpu", 64),
     ("cuda", 4, "4gpu", 64), ("gpu", 8, "8gpu", 64),
 ])
 def test_method_matches_the_detected_jax_device_layout(
@@ -114,7 +114,7 @@ def test_existing_output_is_untouched_by_live_entrypoint(tmp_path):
     sentinel = tmp_path / "existing.txt"
     sentinel.write_text("Retain this prior run")
     result = subprocess.run([sys.executable, "-m", "simulation.paths.run_simulation",
-                             "--case", "compact_diagnostic", "--output-dir", str(tmp_path)],
+                             "--case", "centered_rectangle", "--output-dir", str(tmp_path)],
                             env={**os.environ, "PYTHONDONTWRITEBYTECODE": "1"},
                             capture_output=True, text=True, timeout=30)
     assert result.returncode != 0 and "FileExistsError" in result.stderr
@@ -122,18 +122,16 @@ def test_existing_output_is_untouched_by_live_entrypoint(tmp_path):
     assert sorted(path.name for path in tmp_path.iterdir()) == ["existing.txt"]
 
 
-def test_diagnostic_does_not_replace_any_frozen_positive_case():
-    assert len(CASE_NAMES) == 6 and "compact_diagnostic" not in CASE_NAMES
-    assert "compact_diagnostic" in LAUNCH_CASE_NAMES
-    case = simulation_case("compact_diagnostic")
-    assert case.manifest()["random_seed"] == 20260902
+def test_runnable_cases_are_exactly_the_frozen_acceptance_matrix():
+    assert CASE_NAMES
+    assert set(CASE_NAMES) == set(simulation_case(name).name for name in CASE_NAMES)
     baseline = simulation_case("centered_rectangle")
     assert SIMULATION_CONFIG_PATH == ROOT / "config/simulation_cases.yaml"
     assert baseline.designation.regions[0].half_size_xy_mm == (2.0, 2.0)
     assert baseline.designation.regions[0].depth_mm == 2.0
     assert baseline.designation.constraint_depth_mm == 3.0
     assert baseline.raster_settings["candidate_energies_j"] == (4.0, 8.0)
-    assert case.scan().lower_boundary_mm == case.designation.grid_bounds_mm[2][0] == -2.0
+    assert baseline.scan().lower_boundary_mm == baseline.designation.grid_bounds_mm[2][0]
     with pytest.raises(ValueError):
         simulation_case("unrecognized_task")
 
@@ -157,15 +155,17 @@ def test_killed_worker_without_output_fails_and_preserves_not_run_cases(tmp_path
     import simulation.paths.check_simulation as check_simulation
 
     returns = iter([0, -9])
-    calls = []
+    calls, environments = [], []
     def run(command, **kwargs):
         calls.append(command)
+        environments.append(kwargs["env"])
         return SimpleNamespace(returncode=next(returns))
     monkeypatch.setattr(check_simulation.subprocess, "run",
                         run)
     monkeypatch.chdir(tmp_path)
     summary = check_simulation.check_suite(Path("suite"))
     assert Path(calls[1][-1]).is_absolute()
+    assert environments[0]["PYTEST_DISABLE_PLUGIN_AUTOLOAD"] == "1"
     assert not summary["URDF_MPPI_TASK_SUITE_COMPLETE"]
     first = summary["direct_cases"]["centered_rectangle"]
     assert not first["accepted"] and first["process_returncode"] == -9

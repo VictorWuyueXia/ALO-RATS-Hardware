@@ -2,8 +2,8 @@
 physical_execution_enabled: false
 robot:
   ip: 192.168.1.103
-  safe_joint_pose_rad: [1.610071, -1.041262, 1.274265, -3.389604, -1.140393, 1.535890]
-  scan_joint_pose_rad: [1.610071, -1.041262, 1.274265, -3.389604, -1.140393, 1.535890]
+  safe_joint_pose_rad: [-0.61228687, -2.31055894, -1.35130274, 3.65143649, -1.37298042, -1.55824644]
+  scan_joint_pose_rad: [-0.61228687, -2.31055894, -1.35130274, 3.65143649, -1.37298042, -1.55824644]
   move_speed_rad_s: 0.10
   move_acceleration_rad_s2: 2.0
   maximum_joint_delta_rad: 1.0
@@ -26,18 +26,18 @@ registration:
     - [0.0, 0.0, 1.0, 0.0]
     - [0.0, 0.0, 0.0, 1.0]
   laser_standoff_m: 0.040
-  maximum_intercept_error_mm: 0.025
-  maximum_axis_error_rad: 0.001
+  maximum_intercept_error_mm: 1.0
+  maximum_axis_error_rad: 0.01
 oct:
-  shared_root: /mnt/OCT_Data  # Detected read-only CIFS mount; verify responsiveness before use.
-  file_pattern: "*.tif"
-  expected_b_scans: 128
+  shared_root: /mnt/OCT_Data/victor
+  file_pattern: "BSCAN-SGL-*.tif"
+  expected_b_scans: 256
   image_shape_px: [512, 512]
-  pixel_spacing_lateral_scan_depth_mm: [0.028, 0.11173, 0.01459]
+  pixel_spacing_lateral_scan_depth_mm: [0.014, 0.028, 0.01459]
   axis_order: [0, 1, 2]
   axis_signs: [1, 1, 1]
   surface_margin_px: 30
-  surface_threshold_u8: 80
+  surface_threshold_u8: 50
   planning_volume_bounds_mm: [[-2.8, 2.8], [-2.8, 2.8], [-8.0, 0.6]]
   planning_frame_id: 0
   stable_observations: 3

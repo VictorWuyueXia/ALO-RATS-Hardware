@@ -169,7 +169,8 @@ def rollout_terminal_in_batches(
         )
         parts.append(tuple(np.asarray(value[:count]) for value in values))
         del values
-        print(f"rollout kind=terminal batch={batch_index}/{batch_count} rows=[{start},{stop})", flush=True)
+        if batch_index == 1 or batch_index == batch_count or batch_index % max(1, batch_count // 10) == 0:
+            print(f"rollout kind=terminal batch={batch_index}/{batch_count} rows=[{start},{stop})", flush=True)
 
     combined = tuple(np.concatenate([part[index] for part in parts]) for index in range(8))
     states, remaining, overcut, healthy, clearance, pulses, energy, flag_values = combined

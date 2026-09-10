@@ -68,3 +68,15 @@ def test_site_configuration_rejects_unapproved_motion_values():
     values["robot"]["safe_joint_pose_rad"] = np.zeros(5)
     with pytest.raises(ValueError, match="six finite"):
         SiteConfiguration(**values)
+
+
+@pytest.mark.parametrize(("experiment_number", "case_name"), [
+    (2, "protected_boundary"), (3, "response_disturbance"),
+])
+def test_physical_planning_inputs_match_the_validated_case(experiment_number, case_name):
+    """Deployment uses the random seed and raster settings exercised by simulation validation."""
+    root = Path(__file__).parents[1]
+    cases = yaml.safe_load((root / "config/simulation_cases.yaml").read_text())
+    experiment = yaml.safe_load((root / f"config/experiment_{experiment_number}.yaml").read_text())
+    assert experiment["random_seed"] == cases["random_seed"]
+    assert experiment["raster_settings"] == cases["cases"][case_name]["raster_settings"]
